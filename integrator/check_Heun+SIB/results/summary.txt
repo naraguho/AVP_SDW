@@ -1,0 +1,13 @@
+Combined longitudinal-Heun + transverse-SIB verification
+deterministic amplitude order = 2.027967 (expected 2)
+deterministic direction order = 1.998292 (expected 2)
+deterministic total-vector order = 1.998443 (expected 2)
+strong amplitude order = 1.011903 (expected about 1)
+strong direction order = 0.520452 (expected 0.5)
+strong total-vector order = 0.521103 (expected 0.5)
+weak amplitude mean order = 2.019259 (expected 2)
+weak amplitude second-moment order = 2.018954 (expected 2)
+weak direction mean order = 0.988901 (expected 1)
+weak total-vector mean order = 0.979567 (expected 1)
+max direction-norm error = 2.642331e-14
+max |norm(M e)-|M|| error = 2.664535e-14
