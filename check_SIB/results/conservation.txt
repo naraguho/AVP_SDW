@@ -1,0 +1,3 @@
+max_single_spin_norm_error = 1.9761969838327786e-14
+max_two_spin_total_spin_error = 7.6937193979105901e-14
+max_two_spin_exchange_energy_error = 8.0269124680398818e-14
