@@ -1,0 +1,5 @@
+strict fitted order = 2.000329
+shared fitted order = 1.001784
+finest strict error = 3.912444424039e-09
+finest shared error = 3.625370640940e-05
+finest error ratio shared/strict = 9266.254668
