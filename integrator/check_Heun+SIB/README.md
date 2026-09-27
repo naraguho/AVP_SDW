@@ -8,14 +8,14 @@ In the manuscript, this corresponds to composing the amplitude equation Eq. (62)
 
 The test uses two exactly characterized channels:
 
-$$
+```math
 dM=-\lambda(M-\bar M)dt+\sigma_M dW_\parallel,
-$$
+```
 
-$$
+```math
 d\mathbf e=\mathbf e\times(-\mathbf B)dt-
 \sqrt{2D}\,\mathbf e\times\circ d\mathbf W,\qquad |\mathbf e|=1,
-$$
+```
 
 with $\mathbf m=M\mathbf e$. The amplitude is an additive-noise Ornstein-Uhlenbeck process advanced by stochastic Heun. The direction is constant-field precession plus isotropic Stratonovich rotational diffusion advanced by SIB/Cayley. The channels are independent, permitting exact amplitude moments and factorized exact weak moments of $\mathbf m$.
 
