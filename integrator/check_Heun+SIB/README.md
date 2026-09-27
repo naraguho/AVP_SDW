@@ -2,13 +2,95 @@
 
 This folder verifies the numerical composition used for a soft vector `m = M e`. It answers a question that the standalone SIB test cannot: when a fluctuating scalar amplitude is recombined with an independently integrated orientation, does the complete vector inherit the expected stochastic accuracy?
 
-In the manuscript, this corresponds to composing the amplitude equation Eq. (62)/Eq. (D11), integrated by Heun, with the orientation equation Eq. (63)/Eq. (D13), integrated by SIB as specified in Appendix D.3. See the [equation-level manuscript crosswalk](../MANUSCRIPT_CROSSWALK.md).
+In the manuscript, this corresponds to composing the amplitude equation Eq. (62)/Eq. (D11), integrated by Heun, with the orientation equation Eq. (63)/Eq. (D13), integrated by SIB as specified in Appendix D.3.
 
 ![Combined Heun-SIB convergence tests](results/heun_sib_verification.png)
 
 The plotted quantity is the complete physical vector `m = M e`. The figure makes clear that the transverse SIB sector limits the finite-temperature strong order of the combined method. The plotting source is [`plot_results.jl`](plot_results.jl).
 
-## Manufactured model
+## 1. Stochastic Heun in one dimension
+
+Begin with a scalar Stratonovich stochastic differential equation:
+
+```math
+dM=f(M,t)\,dt+g(M,t)\circ dW.
+```
+
+For a step of length `h`, draw one Wiener increment
+
+```math
+\Delta W_n\sim N(0,h).
+```
+
+Heun first forms an Euler predictor:
+
+```math
+\widetilde M
+=M_n+h f(M_n,t_n)+g(M_n,t_n)\Delta W_n.
+```
+
+It then averages the drift and diffusion coefficients at the old and predicted endpoints:
+
+```math
+M_{n+1}=M_n
++\frac{h}{2}\left[f(M_n,t_n)+f(\widetilde M,t_{n+1})\right]
++\frac{\Delta W_n}{2}
+\left[g(M_n,t_n)+g(\widetilde M,t_{n+1})\right].
+```
+
+The same random increment appears in both stages. This predictor-corrector is the stochastic analogue of the explicit trapezoidal rule and is consistent with the Stratonovich interpretation.
+
+## 2. Why the SDW amplitude is simpler
+
+The longitudinal SDW equation has additive noise:
+
+```math
+dM_i=f_{M,i}(\mathbf m)\,dt
++\sigma_\parallel\,dW_{i,\parallel},
+```
+
+```math
+f_{M,i}(\mathbf m)
+=\Gamma_\parallel\hat{\mathbf e}_i\cdot\mathbf b_i[\mathbf m],
+\qquad
+\sigma_\parallel=\sqrt{2k_BT\Gamma_\parallel}.
+```
+
+Because the diffusion coefficient is constant, averaging it does not create two noise contributions. The practical update is
+
+```math
+\widetilde M_i=M_{i,n}
++h f_{M,i}(\mathbf m_n)
++\sigma_\parallel\Delta W_{i,\parallel},
+```
+
+```math
+M_{i,n+1}=M_{i,n}
++\frac{h}{2}\left[
+f_{M,i}(\mathbf m_n)+f_{M,i}(\widetilde{\mathbf m})
+\right]
++\sigma_\parallel\Delta W_{i,\parallel}.
+```
+
+The field in the second drift evaluation belongs to the predicted full texture, not merely to a predicted scalar amplitude in isolation.
+
+## 3. Combining Heun with SIB
+
+One timestep advances two different geometries:
+
+1. Heun advances the soft scalar amplitude.
+2. SIB advances the unit orientation through two length-preserving midpoint rotations.
+3. The two updated variables are recombined only at the end:
+
+```math
+\mathbf m_{i,n+1}=M_{i,n+1}\hat{\mathbf e}_{i,n+1}.
+```
+
+The full soft vector must not be normalized after recombination: doing so would erase the amplitude dynamics. Likewise, SIB should not be applied to the amplitude, because its purpose is precisely to preserve length.
+
+At finite temperature the two methods do not have the same strong convergence order. For this problem, additive-noise Heun gives approximately strong order one, while the SIB orientation with noncommuting multiplicative noise gives strong order one half. The error of the reconstructed vector is therefore expected to be limited by the SIB sector.
+
+## 4. Manufactured model
 
 The test uses two exactly characterized channels:
 
@@ -23,7 +105,7 @@ d\mathbf e=\mathbf e\times(-\mathbf B)dt-
 
 with `m = M e`. The amplitude is an additive-noise Ornstein-Uhlenbeck process advanced by stochastic Heun. The direction is constant-field precession plus isotropic Stratonovich rotational diffusion advanced by SIB/Cayley. The channels are independent, permitting exact amplitude moments and factorized exact weak moments of the full vector.
 
-## Implementation
+## 5. Implementation
 
 `amplitude_heun` performs an Euler predictor followed by a trapezoidal drift correction. The same scalar Brownian increment appears in both stages.
 
@@ -31,7 +113,7 @@ with `m = M e`. The amplitude is an additive-noise Ornstein-Uhlenbeck process ad
 
 `hybrid_step` advances both channels and reconstructs `m` only after their individual updates. It never applies SIB to the amplitude and never renormalizes the full soft vector.
 
-## Demonstrations
+## 6. Demonstrations
 
 ### Deterministic test
 
@@ -49,7 +131,7 @@ The exact OU mean and variance are compared with the discrete Heun moments. The 
 
 A 100000-step trajectory checks both unit orientation length and the identity `|M e| = |M|`. This catches accidental normalization of the soft vector or drift of the direction norm.
 
-## Reproduction
+## 7. Reproduction
 
 ```bash
 julia heun_sib_combined_verification.jl --quick
@@ -57,7 +139,7 @@ julia heun_sib_combined_verification.jl
 julia plot_results.jl
 ```
 
-## Full-run results
+## 8. Full-run results
 
 | Quantity | Observed order | Expected order |
 |---|---:|---:|
@@ -76,6 +158,6 @@ The maximum direction-norm error was 2.64 × 10⁻¹⁴, and the maximum error i
 
 These deviations are small finite-range/statistical effects. The full vector shows the limiting orders predicted by the two component methods: deterministic order two, strong order one-half, and weak order one.
 
-## What this test does not establish
+## 9. What this test does not establish
 
 The manufactured field is constant and the amplitude/direction channels are independent. Therefore this test validates the split numerical composition but does not test the state-dependent electronic field, chemical-potential solve, coupling between longitudinal and transverse coefficients, behavior near zero amplitude, or the equilibrium distribution of the production SDW model. Those claims require the actual-code refinement protocol described in the [parent integrator methodology](../).
