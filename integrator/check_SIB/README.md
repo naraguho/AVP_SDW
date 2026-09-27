@@ -21,9 +21,9 @@ In the manuscript, this is the numerical check of the fixed-length orientation s
 
 For the midpoint equation
 
-$$
+```math
 X^+-X=\frac{X+X^+}{2}\times q,
-$$
+```
 
 dotting with $X+X^+$ gives $|X^+|^2-|X|^2=0$. This is an algebraic property of each SIB stage, not an after-step normalization.
 
@@ -35,9 +35,9 @@ A unit spin precessing in a constant unit field has a known exact solution. The 
 
 For multiplicative, noncommuting noise, the test measures
 
-$$
+```math
 \left(E\left[|X_h(T)-X_{\rm ref}(T)|^2\right]\right)^{1/2}.
-$$
+```
 
 The coupled-path construction is essential: independent coarse and fine noises would measure path variability, not discretization error. SIB is expected to have strong order $1/2$.
 
