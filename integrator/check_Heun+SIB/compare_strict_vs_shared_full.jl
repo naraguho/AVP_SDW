@@ -141,19 +141,41 @@ function run_all(; quick=false)
             resolved_a ? @sprintf("%.3f",pw_a) : "below MC resolution")
 
     PLOTS_AVAILABLE || return
-    p1=Plots.plot(hd,ed_s,xscale=:log10,yscale=:log10,marker=:circle,label=@sprintf("strict %.3f",pd_s),xlabel="h",ylabel="full-vector error",title="Deterministic",framestyle=:box)
-    Plots.plot!(p1,hd,ed_a,marker=:diamond,label=@sprintf("shared %.3f",pd_a))
-    p2=Plots.plot(hs,estr_s,xscale=:log10,yscale=:log10,marker=:circle,label=@sprintf("strict %.3f",ps_s),xlabel="h",ylabel="RMS path error",title=@sprintf("Finite T strong (%d paths)",npaths),framestyle=:box)
-    Plots.plot!(p2,hs,estr_a,marker=:diamond,label=@sprintf("shared %.3f",ps_a))
+    p1=Plots.plot(hd,ed_s,xscale=:log10,yscale=:log10,marker=:circle,linewidth=2,label=@sprintf("strict: slope %.3f",pd_s),xlabel="timestep h",ylabel="||m_h - m_ref||",title="Deterministic full-vector accuracy",framestyle=:box,legend=:topleft)
+    Plots.plot!(p1,hd,ed_a,marker=:diamond,linewidth=2,label=@sprintf("shared endpoint: slope %.3f",pd_a))
+    Plots.plot!(p1,hd,ed_s[end].*(hd./hd[end]).^2,linestyle=:dash,color=:black,label="reference h^2")
+    Plots.plot!(p1,hd,ed_a[end].*(hd./hd[end]),linestyle=:dot,color=:gray,label="reference h^1")
+    p2=Plots.plot(hs,estr_s,xscale=:log10,yscale=:log10,marker=:circle,linewidth=2,label=@sprintf("strict: slope %.3f",ps_s),xlabel="timestep h",ylabel="RMS ||m_h - m_ref||",title=@sprintf("Finite-T strong accuracy (%d paths)",npaths),framestyle=:box,legend=:topleft)
+    Plots.plot!(p2,hs,estr_a,marker=:diamond,linewidth=2,label=@sprintf("shared endpoint: slope %.3f",ps_a))
+    Plots.plot!(p2,hs,estr_s[end].*(hs./hs[end]).^0.5,linestyle=:dash,color=:black,label="reference h^0.5")
+    Plots.plot!(p2,hs,estr_a[end].*(hs./hs[end]),linestyle=:dot,color=:gray,label="reference h^1")
     # Clip visual error bars on the logarithmic axis; the unmodified standard
     # errors are written to CSV.  A slope is shown only when every bias exceeds
     # two Monte Carlo standard errors.
     plotse_s=min.(se_s,0.8 .* ew_s); plotse_a=min.(se_a,0.8 .* ew_a)
     label_s=resolved_s ? @sprintf("strict %.3f",pw_s) : "strict: below MC resolution"
     label_a=resolved_a ? @sprintf("shared %.3f",pw_a) : "shared: below MC resolution"
-    p3=Plots.plot(hs,ew_s,yerror=plotse_s,xscale=:log10,yscale=:log10,marker=:circle,label=label_s,xlabel="h",ylabel="weak bias",title="Finite T weak",framestyle=:box)
-    Plots.plot!(p3,hs,ew_a,yerror=plotse_a,marker=:diamond,label=label_a)
-    fig=Plots.plot(p1,p2,p3,layout=(1,3),size=(1500,430),margin=4Plots.mm)
+    p3=Plots.plot(hs,ew_s,yerror=plotse_s,xscale=:log10,yscale=:log10,marker=:circle,linewidth=2,label=label_s,xlabel="timestep h",ylabel="|E[phi_h - phi_ref]|",title="Finite-T weak accuracy",framestyle=:box,legend=:topleft)
+    Plots.plot!(p3,hs,ew_a,yerror=plotse_a,marker=:diamond,linewidth=2,label=label_a)
+    Plots.plot!(p3,hs,ew_a[end].*(hs./hs[end]),linestyle=:dash,color=:black,label="reference h^1")
+
+    p4=Plots.plot(xlim=(0,1),ylim=(0,1),axis=false,legend=false,
+                  title="What the comparison shows")
+    conclusion = "State-dependent electronic field\n\n" *
+        "Strict scheme:\n" *
+        "  Heun uses predicted endpoint field\n" *
+        "  SIB uses predicted midpoint field\n\n" *
+        "Shared approximation:\n" *
+        "  endpoint field is reused by SIB\n\n" *
+        "Observed in this benchmark:\n" *
+        @sprintf("  deterministic: %.3f vs %.3f\n",pd_s,pd_a) *
+        @sprintf("  strong: %.3f vs %.3f\n",ps_s,ps_a) *
+        "  strict weak bias below MC resolution\n\n" *
+        "Conclusion: use strict as reference;\n" *
+        "validate any shared-field shortcut."
+    Plots.annotate!(p4,0.06,0.92,Plots.text(conclusion,10,:left,:top))
+    fig=Plots.plot(p1,p2,p3,p4,layout=(2,2),size=(1250,850),margin=5Plots.mm,
+                   plot_title="Strict two-field vs shared-endpoint Heun + SIB")
     Plots.savefig(fig,joinpath(outdir,"strict_vs_shared_full.png"))
     Plots.savefig(fig,joinpath(outdir,"strict_vs_shared_full.svg"))
 end
