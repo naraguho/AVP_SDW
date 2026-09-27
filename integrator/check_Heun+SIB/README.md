@@ -113,6 +113,14 @@ with `m = M e`. The amplitude is an additive-noise Ornstein-Uhlenbeck process ad
 
 `hybrid_step` advances both channels and reconstructs `m` only after their individual updates. It never applies SIB to the amplitude and never renormalizes the full soft vector.
 
+The original manufactured benchmark deliberately uses independent amplitude and orientation channels, so their execution order is irrelevant. For a state-dependent electronic field, [`coupled_heun_sib_two_fields.jl`](coupled_heun_sib_two_fields.jl) provides the stricter reference implementation. Its `strict_step` performs three field evaluations:
+
+1. old-state field for both predictors;
+2. predicted-endpoint field for the Heun corrector;
+3. predicted-midpoint field for the SIB corrector.
+
+The file also contains `shared_endpoint_step`, which uses only the endpoint reevaluation for both correctors. It is included solely to expose and quantify that cheaper approximation.
+
 ## 6. Demonstrations
 
 ### Deterministic test
@@ -137,6 +145,7 @@ A 100000-step trajectory checks both unit orientation length and the identity `|
 julia heun_sib_combined_verification.jl --quick
 julia heun_sib_combined_verification.jl
 julia plot_results.jl
+julia coupled_heun_sib_two_fields.jl
 ```
 
 ## 8. Full-run results
