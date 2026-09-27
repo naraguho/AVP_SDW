@@ -137,8 +137,8 @@ This is the continuous vector equation from which the implemented split equation
 Because $\mathbf m_i=M_i\hat{\mathbf e}_i$, a Stratonovich differential obeys the ordinary chain rule:
 
 ```math
-d\mathbf m_i=\hat{\mathbf e}_i\,dM_i
-+M_i\,d\hat{\mathbf e}_i,
+d\mathbf m_i=\hat{\mathbf e}_i,dM_i
++M_i,d\hat{\mathbf e}_i,
 \qquad
 \hat{\mathbf e}_i\cdot d\hat{\mathbf e}_i=0.
 ```
@@ -180,7 +180,7 @@ Project the vector differential perpendicular to the moment. Manuscript Eq. (D10
 
 ```math
 d\hat{\mathbf e}_i
-=\frac{1}{M_i}P_{i,\perp}\,d\mathbf m_i.
+=\frac{1}{M_i}P_{i,\perp},d\mathbf m_i.
 ```
 
 For the precession term,
@@ -238,7 +238,7 @@ Its increment over a timestep $h$ is
 The transverse Stratonovich noise is
 
 ```math
-\boldsymbol\zeta_i\,dt
+\boldsymbol\zeta_i,dt
 =\frac{\sqrt{2k_BT\Gamma_{\perp}}}{M_i}
 P_{i,\perp}\circ d\mathbf W_i.
 ```
@@ -345,7 +345,7 @@ the resulting cross-product noise is exactly the tangential noise of Eq. (D14). 
 
 ```math
 d\hat{\mathbf e}_i
-=\hat{\mathbf e}_i\times\mathbf a_i\,dt
+=\hat{\mathbf e}_i\times\mathbf a_i,dt
 +\hat{\mathbf e}_i\times
 \boldsymbol\sigma_i\circ d\mathbf W_i.
 ```
