@@ -161,7 +161,7 @@ E[X(T)]=e^{-2DT}X(0).
 - `conservation_tests`: checks a long stochastic trajectory and an undamped two-spin exchange problem.
 - `j1j2_heunp_vs_sib.jl`: compares projected Heun and SIB on a frustrated interacting spin lattice through energy drift and spin-length preservation.
 
-## 6. What is demonstrated
+<!--## 6. What is demonstrated
 
 ### Geometry
 
@@ -199,7 +199,7 @@ The smooth observable is the first spin component. The exact-moment benchmark me
 
 ### Conservation does not mean exact trajectories
 
-The two-spin test checks total spin and exchange energy in the undamped deterministic limit. Roundoff-level conservation is a structural result; the separate convergence and phase tests show that a norm-preserving trajectory still has finite timestep error.
+The two-spin test checks total spin and exchange energy in the undamped deterministic limit. Roundoff-level conservation is a structural result; the separate convergence and phase tests show that a norm-preserving trajectory still has finite timestep error.-->
 
 ## 7. Reproduction
 
@@ -212,7 +212,7 @@ julia j1j2_heunp_vs_sib.jl
 
 The full run uses 4000 stochastic paths. It writes CSV files, a text summary, and plots when `Plots.jl` is available.
 
-## 8. Full-run results
+<!--## 8. Full-run results
 
 | Test | Observed | Expected |
 |---|---:|---:|
@@ -224,7 +224,7 @@ The full run uses 4000 stochastic paths. It writes CSV files, a text summary, an
 | max two-spin total-spin error, 100000 steps | 7.69 × 10⁻¹⁴ | roundoff |
 | max two-spin exchange-energy error, 100000 steps | 8.03 × 10⁻¹⁴ | roundoff |
 
-The small slope offsets are normal finite-range/statistical deviations: 0.514 is close to 0.5 and 0.989 is close to 1. The appropriate claim is “consistent with the expected orders,” not “exactly equal to the theoretical orders.” The local strong-order estimates fluctuate, while the scaled strong error approaches a plateau; together these are more informative than a single fitted number.
+The small slope offsets are normal finite-range/statistical deviations: 0.514 is close to 0.5 and 0.989 is close to 1. The appropriate claim is “consistent with the expected orders,” not “exactly equal to the theoretical orders.” The local strong-order estimates fluctuate, while the scaled strong error approaches a plateau; together these are more informative than a single fitted number. -->
 
 ## 9. Scope
 
