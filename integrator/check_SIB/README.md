@@ -1,8 +1,8 @@
 # Standalone SIB verification
 
-This folder isolates the transverse integrator from the SDW electronic calculation. The purpose is to test SIB itself on problems whose geometry, convergence order, or invariants are known independently.
+This folder studies Semi-Implicit Scheme B (SIB) as introduced by Mentink *et al.*, “Stable and fast semi-implicit integration of the stochastic Landau–Lifshitz equation,” *J. Phys.: Condens. Matter* **22**, 176001 (2010), [doi:10.1088/0953-8984/22/17/176001](https://doi.org/10.1088/0953-8984/22/17/176001). Their central numerical problem is how to integrate interacting fixed-length spins without losing the geometry or paying for a fully implicit nonlinear solve. They demonstrated the method on a physical one-dimensional Heisenberg chain.
 
-In the manuscript, this is the numerical check of the fixed-length orientation sector in Eq. (63)/Eq. (D13) and the SIB prescription in Appendix D.3.
+We first reproduce the method’s geometric and convergence properties on exactly characterized problems. We then apply the same algorithm to a frustrated square-lattice `J1-J2` model and compare it with projected Heun (HeunP).
 
 ![Standalone SIB convergence and phase-error tests](results/sib_verification.png)
 
@@ -100,28 +100,50 @@ Therefore
 
 Length conservation is thus built into both iterations; it is not produced by normalizing the answer afterward. The code solves this three-dimensional implicit equation analytically with a Cayley rotation.
 
-## 4. Connection to the SDW orientation
+## 4. Physical benchmark: square-lattice J1-J2 model
 
-For the SDW problem, identify `X` with the unit direction of the local moment. Its deterministic coefficient can be written as
-
-```math
-\mathbf a_i
-=\mathbf b_i
--\frac{\Gamma_\perp}{M_i}
-(\hat{\mathbf e}_i\times\mathbf b_i),
-```
-
-because
+The physical test in [`j1j2_heunp_vs_sib.jl`](j1j2_heunp_vs_sib.jl) uses unit classical spins with periodic boundaries:
 
 ```math
-\hat{\mathbf e}_i\times\mathbf a_i
-=\hat{\mathbf e}_i\times\mathbf b_i
--\frac{\Gamma_\perp}{M_i}
-\hat{\mathbf e}_i\times
-(\hat{\mathbf e}_i\times\mathbf b_i).
+H=J_1\sum_{\langle ij\rangle}\mathbf S_i\cdot\mathbf S_j
++J_2\sum_{\langle\!\langle ij\rangle\!\rangle}
+\mathbf S_i\cdot\mathbf S_j,
+\qquad |\mathbf S_i|=1.
 ```
 
-The projected transverse noise can likewise be expressed as a cross product, so it fits the SIB form. This is why SIB is applied to the unit orientation—not to the full soft moment whose amplitude must be free to change.
+The local field and deterministic equation are
+
+```math
+\mathbf b_i=-\frac{\partial H}{\partial\mathbf S_i},
+\qquad
+\frac{d\mathbf S_i}{dt}=\mathbf S_i\times\mathbf b_i.
+```
+
+Continuous dynamics conserve both energy and every spin length. This gives two direct numerical diagnostics.
+
+### Compared methods
+
+**HeunP** uses the explicit Heun predictor and trapezoidal corrector, followed by normalization of every corrected spin. Its reported spin length is therefore accurate by construction, but the projection changes the numerical trajectory and does not enforce energy conservation.
+
+**SIB** uses the implicit-midpoint predictor and corrector from Eq. (18) of Mentink *et al.*. Each local implicit equation is solved analytically by the Cayley formula. No normalization is applied.
+
+### Energy-stability protocol
+
+The benchmark uses `L=16`, `J1=1`, `J2/J1=0.30`, total time `20/J1`, and eight random unit-spin initial configurations. For each timestep, it records the signed time-averaged energy error
+
+```math
+\epsilon_E(h)
+=\frac{1}{N J_1}
+\left\langle H(0)-H_h(t)\right\rangle_t,
+```
+
+and the maximum length error over all sites and sampled times. Error bars are standard errors over the eight initial configurations.
+
+![J1-J2 energy stability and spin-length preservation](results/j1j2_heunp_vs_sib.png)
+
+The result has the same interpretation as the stability comparison in the Mentink study. HeunP develops a large systematic energy error as the timestep grows, reaching approximately `0.314/(N J1)` at `h=0.25/J1`. SIB remains much closer to zero, approximately `-0.041/(N J1)` at the same timestep. Both curves show roundoff-level final spin lengths, but for different reasons: HeunP explicitly projects after every step, whereas SIB preserves length through its midpoint algebra.
+
+This benchmark tests deterministic geometric stability. It is not yet a finite-temperature equilibrium-energy test; thermal noise and damping can be added afterward using coupled Brownian paths and a small-step reference.
 
 ## 5. Code map
 
@@ -137,6 +159,7 @@ The projected transverse noise can likewise be expressed as a cross product, so 
 E[X(T)]=e^{-2DT}X(0).
 ```
 - `conservation_tests`: checks a long stochastic trajectory and an undamped two-spin exchange problem.
+- `j1j2_heunp_vs_sib.jl`: compares projected Heun and SIB on a frustrated interacting spin lattice through energy drift and spin-length preservation.
 
 ## 6. What is demonstrated
 
@@ -184,6 +207,7 @@ The two-spin test checks total spin and exchange energy in the undamped determin
 julia sib_integrator_verification.jl --quick
 julia sib_integrator_verification.jl
 julia plot_results.jl
+julia j1j2_heunp_vs_sib.jl
 ```
 
 The full run uses 4000 stochastic paths. It writes CSV files, a text summary, and plots when `Plots.jl` is available.
@@ -204,4 +228,4 @@ The small slope offsets are normal finite-range/statistical deviations: 0.514 is
 
 ## 9. Scope
 
-This program validates the SIB implementation for fixed-length spins. It does not test the longitudinal soft mode, the SDW field solver, chemical-potential adjustment, or behavior near zero amplitude. Those are addressed separately by the combined manufactured test and the production acceptance protocol.
+These programs validate SIB for fixed-length spins, first through exactly characterized convergence tests and then through an interacting frustrated lattice model. The (J_1)–(J_2) benchmark is deliberately kept independent of any soft longitudinal mode or electronic field solver.
