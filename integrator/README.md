@@ -6,45 +6,45 @@ This methodology implements the SDW dynamics of Sec. VI, Eqs. (57)-(63), and App
 
 At each lattice site, write the soft SDW vector as
 
-$$
+```math
 \mathbf m=M\mathbf e,\qquad M=|\mathbf m|,\qquad |\mathbf e|=1.
-$$
+```
 
 Let $\mathbf b=-\partial F/\partial\mathbf m$ be the thermodynamic driving field returned by the constrained electronic calculation. This sign convention must be used consistently in both the equations and code. Define
 
-$$
+```math
 b_\parallel=\mathbf e\cdot\mathbf b,\qquad
 \mathbf b_\parallel=b_\parallel\mathbf e,\qquad
 \mathbf b_\perp=(I-\mathbf e\mathbf e^{\mathsf T})\mathbf b.
-$$
+```
 
 The stochastic generalized Landau-Lifshitz dynamics used here is
 
-$$
+```math
 d\mathbf m=
 \left[\mathbf m\times\mathbf b+
 \Gamma_\parallel\mathbf b_\parallel+
 \Gamma_\perp\mathbf b_\perp\right]dt
 +\sqrt{2k_BT\Gamma_\parallel}\,\mathbf e\,dW_\parallel
 +\sqrt{2k_BT\Gamma_\perp}\,P_\perp\circ d\mathbf W_\perp,
-$$
+```
 
 where $P_\perp=I-\mathbf e\mathbf e^{\mathsf T}$. The transverse stochastic integral is interpreted in the Stratonovich sense. Independent longitudinal and transverse noises give the required projected covariance.
 
 Projecting parallel and perpendicular to $\mathbf e$ gives
 
-$$
+```math
 dM=\Gamma_\parallel b_\parallel\,dt+
 \sqrt{2k_BT\Gamma_\parallel}\,dW_\parallel,
-$$
+```
 
 and, away from $M=0$,
 
-$$
+```math
 d\mathbf e=\left[\mathbf e\times\mathbf b+
 \frac{\Gamma_\perp}{M}\mathbf b_\perp\right]dt+
 \frac{\sqrt{2k_BT\Gamma_\perp}}{M}P_\perp\circ d\mathbf W_\perp.
-$$
+```
 
 Every term in the orientation equation is tangent to the unit sphere. This is why a geometric spin method is appropriate for $\mathbf e$, whereas the scalar amplitude should not be constrained by SIB.
 
@@ -54,29 +54,29 @@ The amplitude is a scalar soft mode: it must be allowed to relax and fluctuate. 
 
 The direction is a rotational mode. An explicit Heun predictor does not preserve unit length at its predictor stage. SIB instead retains the implicit-midpoint rotational form in both predictor and corrector. For an equation written as
 
-$$
+```math
 d\mathbf e=\mathbf e\times\mathbf a(\mathbf e)dt+
 \mathbf e\times\sigma(\mathbf e)\circ d\mathbf W,
-$$
+```
 
 SIB uses
 
-$$
+```math
 \widetilde{\mathbf e}=\mathbf e_n+
 \frac{\mathbf e_n+\widetilde{\mathbf e}}{2}\times
 \left[h\mathbf a(\mathbf e_n)+\sigma(\mathbf e_n)\Delta\mathbf W\right],
-$$
+```
 
 followed by
 
-$$
+```math
 \mathbf e_{n+1}=\mathbf e_n+
 \frac{\mathbf e_n+\mathbf e_{n+1}}{2}\times
 \left[h\mathbf a(\mathbf e_{n+1/2}^{p})+
 \sigma(\mathbf e_{n+1/2}^{p})\Delta\mathbf W\right],
 \quad
 \mathbf e_{n+1/2}^{p}=\frac{\mathbf e_n+\widetilde{\mathbf e}}{2}.
-$$
+```
 
 The same Wiener increment is used in both stages. Each implicit vector equation is a three-dimensional rotation and can be solved analytically with the Cayley transform; no iterative nonlinear solve is required for the spin rotation itself.
 
