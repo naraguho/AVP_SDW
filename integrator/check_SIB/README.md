@@ -2,6 +2,8 @@
 
 This folder isolates the transverse integrator from the SDW electronic calculation. The purpose is to test SIB itself on problems whose geometry, convergence order, or invariants are known independently.
 
+In the manuscript, this is the numerical check of the fixed-length orientation sector in Eq. (63)/Eq. (D13) and the SIB prescription in Appendix D.3. See the [equation-level manuscript crosswalk](../MANUSCRIPT_CROSSWALK.md).
+
 ## Code map
 
 `sib_integrator_verification.jl` is the supplied CPU verification program. Its central pieces are:
@@ -73,4 +75,3 @@ The small slope offsets are normal finite-range/statistical deviations: 0.514 is
 ## Scope
 
 This program validates the SIB implementation for fixed-length spins. It does not test the longitudinal soft mode, the SDW field solver, chemical-potential adjustment, or behavior near zero amplitude. Those are addressed separately by the combined manufactured test and the production acceptance protocol.
-
