@@ -4,6 +4,10 @@ This folder verifies the numerical composition used for a soft vector $\mathbf m
 
 In the manuscript, this corresponds to composing the amplitude equation Eq. (62)/Eq. (D11), integrated by Heun, with the orientation equation Eq. (63)/Eq. (D13), integrated by SIB as specified in Appendix D.3. See the [equation-level manuscript crosswalk](../MANUSCRIPT_CROSSWALK.md).
 
+![Combined Heun-SIB convergence tests](results/heun_sib_verification.png)
+
+The plotted quantity is the complete physical vector $\mathbf m=M\mathbf e$. The figure makes clear that the transverse SIB sector limits the finite-temperature strong order of the combined method. The plotting source is [`plot_results.jl`](plot_results.jl).
+
 ## Manufactured model
 
 The test uses two exactly characterized channels:
@@ -50,6 +54,7 @@ A 100000-step trajectory checks both $|\mathbf e|=1$ and the identity $|M\mathbf
 ```bash
 julia heun_sib_combined_verification.jl --quick
 julia heun_sib_combined_verification.jl
+julia plot_results.jl
 ```
 
 ## Full-run results
