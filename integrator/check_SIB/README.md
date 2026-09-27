@@ -4,6 +4,10 @@ This folder isolates the transverse integrator from the SDW electronic calculati
 
 In the manuscript, this is the numerical check of the fixed-length orientation sector in Eq. (63)/Eq. (D13) and the SIB prescription in Appendix D.3. See the [equation-level manuscript crosswalk](../MANUSCRIPT_CROSSWALK.md).
 
+![Standalone SIB convergence and phase-error tests](results/sib_verification.png)
+
+The three log-log panels show the expected deterministic, stochastic strong, and stochastic weak slopes. The final panel checks the analytically predicted Cayley phase-error growth. The plotting source is [`plot_results.jl`](plot_results.jl).
+
 ## Code map
 
 `sib_integrator_verification.jl` is the supplied CPU verification program. Its central pieces are:
@@ -54,6 +58,7 @@ The two-spin test checks total spin and exchange energy in the undamped determin
 ```bash
 julia sib_integrator_verification.jl --quick
 julia sib_integrator_verification.jl
+julia plot_results.jl
 ```
 
 The full run uses 4000 stochastic paths. It writes CSV files, a text summary, and plots when `Plots.jl` is available.
