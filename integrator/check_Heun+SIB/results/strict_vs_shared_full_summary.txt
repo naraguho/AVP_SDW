@@ -1,0 +1,5 @@
+paths = 2000
+reference steps = 16384
+deterministic strict/shared = 2.000329 1.001784
+strong strict/shared = 0.571202 0.922149
+weak strict/shared = NaN 1.008044
