@@ -17,7 +17,7 @@ We therefore integrate these two degrees of freedom differently:
 
 The amplitude `M_i` uses stochastic Heun. The unit orientation `e_i` uses Semi-Implicit Scheme B (SIB).
 
-For a complete derivation from the Hubbard model through the final discrete updates, see [`MANUSCRIPT_CROSSWALK.md`](MANUSCRIPT_CROSSWALK.md).
+The two verification folders give self-contained introductions to the numerical methods: [`check_SIB/`](check_SIB/) develops the transverse SIB construction, while [`check_Heun+SIB/`](check_Heun+SIB/) develops stochastic Heun and then combines the two updates.
 
 ## 1. What information comes from the electrons?
 
