@@ -1,5 +1,7 @@
 # Longitudinal-Heun / transverse-SIB SDW integrator
 
+This methodology implements the SDW dynamics of Sec. VI, Eqs. (57)-(63), and Appendix D, Eqs. (D2)-(D15), of `AVP-dynamics3.pdf`. The detailed [manuscript crosswalk](MANUSCRIPT_CROSSWALK.md) traces the constrained electronic field, fluctuation-dissipation relations, Heun amplitude step, and SIB orientation step equation by equation.
+
 ## 1. State and field convention
 
 At each lattice site, write the soft SDW vector as
