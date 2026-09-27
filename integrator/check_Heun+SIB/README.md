@@ -139,6 +139,14 @@ Thus the stochastic comparison should be read primarily through error size and s
 
 ## 6. Demonstrations
 
+### Strict-method-only summary
+
+The following figure reports only the strict Heun+SIB method; it contains no shared-field comparison.
+
+![Strict Heun-SIB deterministic, strong, weak, and geometry tests](results/strict_heun_sib_verification.png)
+
+The exact manufactured benchmark has constant/independent amplitude and orientation coefficients. Consequently, the strict endpoint field used by Heun and midpoint field used by SIB coincide analytically in this test. This makes exact deterministic and weak references possible and cleanly verifies the integrator orders and geometry. The separate nonlinear-field test above checks the additional claim that the endpoint and midpoint electronic fields must be evaluated separately when they do not coincide.
+
 ### Deterministic test
 
 Both exact solutions are known. Heun is second order for the amplitude and the Cayley/SIB constant-field step is second order for the direction. Therefore the complete vector should be second order.
@@ -164,6 +172,7 @@ julia plot_results.jl
 julia coupled_heun_sib_two_fields.jl
 julia compare_strict_vs_shared.jl
 julia compare_strict_vs_shared_full.jl
+julia plot_strict_verification.jl
 ```
 
 ## 8. Full-run results
