@@ -121,6 +121,12 @@ The original manufactured benchmark deliberately uses independent amplitude and 
 
 The file also contains `shared_endpoint_step`, which uses only the endpoint reevaluation for both correctors. It is included solely to expose and quantify that cheaper approximation.
 
+[`compare_strict_vs_shared.jl`](compare_strict_vs_shared.jl) performs the corresponding accuracy test for a nonlinear state-dependent field. It constructs an independent, very fine RK4 solution of the continuous deterministic equations and measures the final full-vector error of both discretizations over a sequence of timesteps. This is stronger evidence than comparing the two discrete trajectories only with each other: it identifies which trajectory is closer to the same continuous equation.
+
+![Strict midpoint field versus shared endpoint field](results/strict_vs_shared.svg)
+
+For this benchmark, the strict method has fitted order 2.000, whereas the shared-endpoint approximation has fitted order 1.002. At the finest tested timestep, the shared-field error is approximately 9266 times larger. The midpoint substitution changes the local truncation structure: replacing the SIB midpoint field by an endpoint field introduces an order-`h` coefficient error inside an order-`h` rotation, producing an order-`h²` local defect and therefore an order-`h` global error. This establishes the advantage for the tested nonlinear field; it is not a claim that the strict trajectory has smaller error for every field and every coarse timestep.
+
 ## 6. Demonstrations
 
 ### Deterministic test
@@ -146,6 +152,7 @@ julia heun_sib_combined_verification.jl --quick
 julia heun_sib_combined_verification.jl
 julia plot_results.jl
 julia coupled_heun_sib_two_fields.jl
+julia compare_strict_vs_shared.jl
 ```
 
 ## 8. Full-run results
