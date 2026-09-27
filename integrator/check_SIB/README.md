@@ -2,11 +2,11 @@
 
 This folder studies Semi-Implicit Scheme B (SIB) as introduced by Mentink *et al.*, “Stable and fast semi-implicit integration of the stochastic Landau–Lifshitz equation,” *J. Phys.: Condens. Matter* **22**, 176001 (2010), [doi:10.1088/0953-8984/22/17/176001](https://doi.org/10.1088/0953-8984/22/17/176001). Their central numerical problem is how to integrate interacting fixed-length spins without losing the geometry or paying for a fully implicit nonlinear solve. They demonstrated the method on a physical one-dimensional Heisenberg chain.
 
-\#We first reproduce the method’s geometric and convergence properties on exactly characterized problems. We then apply the same algorithm to a frustrated square-lattice `J1-J2` model and compare it with \#projected Heun (HeunP).
+<!-- We first reproduce the method’s geometric and convergence properties on exactly characterized problems. We then apply the same algorithm to a frustrated square-lattice `J1-J2` model and compare it with \#projected Heun (HeunP).
 
 ![Standalone SIB convergence and phase-error tests](results/sib_verification.png)
 
-The three log-log panels show the expected deterministic, stochastic strong, and stochastic weak slopes. The final panel checks the analytically predicted Cayley phase-error growth. The plotting source is [`plot_results.jl`](plot_results.jl).
+The three log-log panels show the expected deterministic, stochastic strong, and stochastic weak slopes. The final panel checks the analytically predicted Cayley phase-error growth. The plotting source is [`plot_results.jl`](plot_results.jl).-->
 
 ## 1. What problem does SIB solve?
 
