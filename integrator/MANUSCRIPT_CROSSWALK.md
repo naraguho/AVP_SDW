@@ -1,264 +1,416 @@
-# Connection to the SDW sector of the AVP manuscript
+# From the AVP manuscript to the Heun-SIB integrator
 
-This note connects the numerical scheme in this repository directly to Sec. VI and Appendix D of `AVP-dynamics3.pdf`. It separates three layers that should not be conflated:
+This document derives the numerical variables and update rules from the SDW sector of `AVP-dynamics3.pdf`. The order is deliberately the same as the physics:
 
-1. the constrained electronic calculation that returns the thermodynamic field;
-2. the continuous stochastic SDW equations;
-3. the discrete longitudinal-Heun/transverse-SIB integrator.
+1. construct the constrained electronic free energy;
+2. obtain its conjugate magnetic field;
+3. write the stochastic vector dynamics;
+4. project that dynamics into amplitude and orientation;
+5. discretize the amplitude with Heun and the orientation with SIB.
 
-## 1. Section VI: microscopic field and SDW dynamics
+The manuscript equations referenced below are in Sec. VI and Appendix D.
 
-The manuscript begins from the Hubbard Hamiltonian [Eq. (53)] and local electronic spin operators [Eq. (54)]. The prescribed collective variable is the constrained spin expectation
+## 1. Microscopic starting point
 
-$$
+Section VI starts with the repulsive Hubbard model, manuscript Eq. (53):
+
+```math
+\hat H=-t\sum_{\langle ij\rangle,\alpha}
+\left(\hat c_{i\alpha}^{\dagger}\hat c_{j\alpha}+\mathrm{H.c.}\right)
++U\sum_i\hat n_{i\uparrow}\hat n_{i\downarrow}.
+```
+
+The retained collective variables are the three components of the local electronic spin, manuscript Eq. (54):
+
+```math
+\hat s_i^a=\frac{1}{2}\sum_{\alpha\beta}
+\hat c_{i\alpha}^{\dagger}\sigma^a_{\alpha\beta}\hat c_{i\beta},
+\qquad a=x,y,z.
+```
+
+The prescribed SDW texture is the constrained expectation value
+
+```math
 \langle\hat{\mathbf s}_i\rangle=\mathbf m_i.
-$$
+```
 
-The constrained Hartree-Fock functional and quadratic Hamiltonian are Eqs. (55) and (56). After the electronic constraint is converged, the field used by the dynamics is
+Thus $\mathbf m_i$ is not an auxiliary classical spin placed next to the electrons. It is the local spin density of the same constrained electronic state.
 
-$$
-\mathbf b_i=-\frac{\partial F}{\partial\mathbf m_i},
-\tag{57}
-$$
+## 2. The field that drives the dynamics
 
-not merely the effective field appearing inside an unconverged one-particle Hamiltonian.
+For a prescribed texture $\{\mathbf m_i\}$, manuscript Eqs. (55)-(56) define a constrained finite-temperature Hartree-Fock problem. Once that problem is converged, its free energy is a function of the prescribed texture. The thermodynamic field is manuscript Eq. (57):
 
-The local spin commutator [Eq. (58)] generates the reversible contribution $\mathbf m_i\times\mathbf b_i$. The amplitude-orientation variables and field projections are
+```math
+\mathbf b_i=-\frac{\partial F}{\partial\mathbf m_i}.
+```
 
-$$
+This sign convention matters: $\mathbf b_i$ points in the direction that lowers the constrained free energy.
+
+Appendix D distinguishes this thermodynamic field from the effective one-particle field $\mathbf h_i$ used during the Hartree-Fock iteration. Manuscript Eq. (D2) gives
+
+```math
+\mathbf h_i=\mathbf b_i-2U\mathbf m_i.
+```
+
+After convergence, manuscript Eq. (D7) converts the internal field back to the thermodynamic field:
+
+```math
+\mathbf b_i=\bar{\mathbf h}_i+2U\mathbf s_i[\bar G]
+=\bar{\mathbf h}_i+2U\mathbf m_i.
+```
+
+Therefore `find_local_field!` must return $\mathbf b_i$, or its caller must perform this conversion. Passing $\mathbf h_i$ directly into the dynamical equation would omit $2U\mathbf m_i$.
+
+The constrained iteration is manuscript Eqs. (D4)-(D6). The Fermi occupations in Eq. (D5) contain the chemical potential $\mu$, which is adjusted to maintain the chosen filling. Consequently, every electronic solve used by an old state, predictor state, or midpoint state must recalculate $\mu$.
+
+## 3. Why the reversible term is a cross product
+
+The local spin operators obey manuscript Eq. (58):
+
+```math
+[\hat s_i^a,\hat s_j^b]
+=i\delta_{ij}\epsilon^{abc}\hat s_i^c.
+```
+
+This algebra generates the reversible AVP tensor and gives
+
+```math
+\left.\frac{d\mathbf m_i}{dt}\right|_{\mathrm{rev}}
+=\mathbf m_i\times\mathbf b_i.
+```
+
+The cross product is therefore fixed by the microscopic spin commutator; it is not an independently chosen phenomenological precession term.
+
+## 4. Longitudinal and transverse mobilities
+
+The manuscript separates the moment into magnitude and direction in Eq. (59):
+
+```math
 \mathbf m_i=M_i\hat{\mathbf e}_i,
-\qquad M_i=|\mathbf m_i|,
-\qquad |\hat{\mathbf e}_i|=1,
-\tag{59}
-$$
+\qquad
+M_i=|\mathbf m_i|,
+\qquad
+|\hat{\mathbf e}_i|=1.
+```
 
-$$
-\mathbf b_{i,\parallel}=\hat{\mathbf e}_i
+For $M_i>0$, define the projectors
+
+```math
+P_{i,\parallel}=\hat{\mathbf e}_i\hat{\mathbf e}_i^{\mathsf T},
+\qquad
+P_{i,\perp}=I-P_{i,\parallel}.
+```
+
+Manuscript Eq. (60) is then
+
+```math
+\mathbf b_{i,\parallel}=P_{i,\parallel}\mathbf b_i
+=\hat{\mathbf e}_i
 (\hat{\mathbf e}_i\cdot\mathbf b_i),
 \qquad
-\mathbf b_{i,\perp}=\mathbf b_i-\mathbf b_{i,\parallel}.
-\tag{60}
-$$
+\mathbf b_{i,\perp}=P_{i,\perp}\mathbf b_i.
+```
 
-The full vector equation is Eq. (61):
+The dissipative mobility tensor is chosen locally as
 
-$$
+```math
+\Gamma_i=\Gamma_{\parallel}P_{i,\parallel}
++\Gamma_{\perp}P_{i,\perp},
+```
+
+so amplitude and orientation can relax on different timescales.
+
+Combining reversible precession, dissipative response, and thermal forcing gives manuscript Eq. (61):
+
+```math
 \frac{d\mathbf m_i}{dt}
 =\mathbf m_i\times\mathbf b_i
-+\Gamma_\parallel\mathbf b_{i,\parallel}
-+\Gamma_\perp\mathbf b_{i,\perp}
++\Gamma_{\parallel}\mathbf b_{i,\parallel}
++\Gamma_{\perp}\mathbf b_{i,\perp}
 +\boldsymbol\eta_i(t).
-\tag{61}
-$$
+```
 
-Its longitudinal and transverse projections give the two equations integrated by this repository:
+This is the continuous vector equation from which the implemented split equations follow.
 
-$$
+## 5. Deriving the amplitude equation
+
+Because $\mathbf m_i=M_i\hat{\mathbf e}_i$, a Stratonovich differential obeys the ordinary chain rule:
+
+```math
+d\mathbf m_i=\hat{\mathbf e}_i,dM_i
++M_i,d\hat{\mathbf e}_i,
+\qquad
+\hat{\mathbf e}_i\cdot d\hat{\mathbf e}_i=0.
+```
+
+Dotting with $\hat{\mathbf e}_i$ gives
+
+```math
+dM_i=\hat{\mathbf e}_i\cdot d\mathbf m_i.
+```
+
+Now apply this projection term by term:
+
+- $\hat{\mathbf e}_i\cdot(\mathbf m_i\times\mathbf b_i)=0$;
+- $\hat{\mathbf e}_i\cdot\mathbf b_{i,\perp}=0$;
+- $\hat{\mathbf e}_i\cdot\mathbf b_{i,\parallel}
+  =\hat{\mathbf e}_i\cdot\mathbf b_i$.
+
+The result is manuscript Eq. (62), repeated as Eq. (D11):
+
+```math
 \frac{dM_i}{dt}
-=\Gamma_\parallel\hat{\mathbf e}_i\cdot\mathbf b_i+\xi_i(t),
-\tag{62}
-$$
+=\Gamma_{\parallel}\hat{\mathbf e}_i\cdot\mathbf b_i
++\xi_i(t).
+```
 
-$$
+Appendix D, Eq. (D8), verifies that
+
+```math
+\frac{\partial F}{\partial M_i}
+=-\hat{\mathbf e}_i\cdot\mathbf b_i.
+```
+
+Hence the deterministic amplitude drift is the Model-A relaxation
+$-\Gamma_{\parallel}\partial F/\partial M_i$.
+
+## 6. Deriving the orientation equation
+
+Project the vector differential perpendicular to the moment. Manuscript Eq. (D10) gives
+
+```math
+d\hat{\mathbf e}_i
+=\frac{1}{M_i}P_{i,\perp},d\mathbf m_i.
+```
+
+For the precession term,
+
+```math
+\frac{1}{M_i}P_{i,\perp}
+(\mathbf m_i\times\mathbf b_i)
+=\hat{\mathbf e}_i\times\mathbf b_i.
+```
+
+For transverse damping,
+
+```math
+\frac{\Gamma_{\perp}}{M_i}\mathbf b_{i,\perp}
+=-\frac{\Gamma_{\perp}}{M_i}
+\hat{\mathbf e}_i\times
+(\hat{\mathbf e}_i\times\mathbf b_i),
+```
+
+where the vector identity
+$\mathbf b_{i,\perp}=-\hat{\mathbf e}_i\times
+(\hat{\mathbf e}_i\times\mathbf b_i)$ was used.
+
+This yields manuscript Eq. (63), repeated as Eq. (D13):
+
+```math
 \frac{d\hat{\mathbf e}_i}{dt}
 =\hat{\mathbf e}_i\times\mathbf b_i
--\frac{\Gamma_\perp}{M_i}
+-\frac{\Gamma_{\perp}}{M_i}
 \hat{\mathbf e}_i\times
 (\hat{\mathbf e}_i\times\mathbf b_i)
 +\boldsymbol\zeta_i(t).
-\tag{63}
-$$
+```
 
-Thus Heun is applied only to the soft amplitude $M_i$, while SIB is applied only to the unit orientation $\hat{\mathbf e}_i$.
+Both deterministic terms are tangent to the unit sphere. This is the geometric reason for applying SIB to $\hat{\mathbf e}_i$ instead of applying SIB to the full soft vector $\mathbf m_i$.
 
-## 2. Appendix D: what the electronic solver must return
+## 7. Noise and fluctuation-dissipation
 
-Appendix D distinguishes the effective field $\mathbf h_i$ used inside the Hartree-Fock Hamiltonian from the thermodynamic field $\mathbf b_i$ used in Eqs. (61)-(63):
+Appendix D introduces independent longitudinal and transverse noise sources. The amplitude noise satisfies manuscript Eq. (D12):
 
-$$
-\mathbf h_i=\mathbf b_i-2U\mathbf m_i,
-\tag{D2}
-$$
-
-$$
-\mathbf b_i=\bar{\mathbf h}_i+2U\mathbf s_i[\bar G]
-=\bar{\mathbf h}_i+2U\mathbf m_i.
-\tag{D7}
-$$
-
-Accordingly, a production routine such as `find_local_field!` must return $\mathbf b_i$, or its caller must perform the conversion in Eq. (D7). Supplying $\mathbf h_i$ directly to the dynamical equation would omit the $2U\mathbf m_i$ contribution.
-
-Equations (D4)-(D6) define the constrained iteration. In Eq. (D5), the chemical potential is adjusted to maintain the requested filling. This adjustment is required at every electronic diagonalization performed for an old state, predictor state, or SIB midpoint state.
-
-Equations (D8)-(D10) then show that the amplitude force and tangential force are projections of the same $\mathbf b_i$:
-
-$$
-\frac{\partial F}{\partial M_i}
-=-\hat{\mathbf e}_i\cdot\mathbf b_i,
-\qquad
-\nabla_{S^2,i}F=-M_i\mathbf b_{i,\perp}.
-\tag{D8-D9}
-$$
-
-This is why the longitudinal and transverse updates must use fields obtained from the same constrained free-energy problem.
-
-## 3. Appendix D: fluctuation-dissipation structure
-
-The amplitude noise in Eqs. (D11)-(D12) satisfies
-
-$$
+```math
 \langle\xi_i(t)\xi_j(t')\rangle
-=2k_BT\Gamma_\parallel\delta_{ij}\delta(t-t').
-\tag{D12}
-$$
+=2k_BT\Gamma_{\parallel}
+\delta_{ij}\delta(t-t').
+```
 
-For a timestep $h$, its discrete increment is therefore
+Its increment over a timestep $h$ is
 
-$$
-\sqrt{2k_BT\Gamma_\parallel}\,\Delta W_{i,\parallel},
-\qquad \Delta W_{i,\parallel}\sim N(0,h).
-$$
-
-The orientational equation is repeated as Eq. (D13). Its explicit Stratonovich noise representation is
-
-$$
-\boldsymbol\zeta_i,dt
-=\frac{\sqrt{2k_BT\Gamma_\perp}}{M_i}
-P_{i,\perp}\circ d\mathbf W_i,
+```math
+\sqrt{2k_BT\Gamma_{\parallel}}\,\Delta W_{i,\parallel},
 \qquad
-P_{i,\perp}=I-\hat{\mathbf e}_i\hat{\mathbf e}_i^{\mathsf T}.
-$$
+\Delta W_{i,\parallel}\sim N(0,h).
+```
 
-This produces Eq. (D14),
+The transverse Stratonovich noise is
 
-$$
+```math
+\boldsymbol\zeta_i,dt
+=\frac{\sqrt{2k_BT\Gamma_{\perp}}}{M_i}
+P_{i,\perp}\circ d\mathbf W_i.
+```
+
+It has the covariance in manuscript Eq. (D14):
+
+```math
 \langle\zeta_i^a(t)\zeta_j^b(t')\rangle_{\mathbf m}
-=\frac{2k_BT\Gamma_\perp}{M_i^2}
-P_{i,\perp}^{ab}\delta_{ij}\delta(t-t'),
-\tag{D14}
-$$
+=\frac{2k_BT\Gamma_{\perp}}{M_i^2}
+P_{i,\perp}^{ab}
+\delta_{ij}\delta(t-t').
+```
 
-and, with $\boldsymbol\eta_i=\hat{\mathbf e}_i\xi_i+M_i\boldsymbol\zeta_i$, the vector covariance in Eq. (D15):
+Since
+$\boldsymbol\eta_i=\hat{\mathbf e}_i\xi_i+M_i\boldsymbol\zeta_i$,
+the two independent noises reproduce manuscript Eq. (D15):
 
-$$
+```math
 \langle\eta_i^a(t)\eta_j^b(t')\rangle_{\mathbf m}
 =2k_BT\left(
-\Gamma_\parallel P_{i,\parallel}^{ab}
-+\Gamma_\perp P_{i,\perp}^{ab}
-\right)\delta_{ij}\delta(t-t').
-\tag{D15}
-$$
+\Gamma_{\parallel}P_{i,\parallel}^{ab}
++\Gamma_{\perp}P_{i,\perp}^{ab}
+\right)
+\delta_{ij}\delta(t-t').
+```
 
-The factors $1/M_i$ in the orientation drift and noise are therefore required. They ensure that $\Gamma_\perp$ remains the transverse mobility of the magnetic moment rather than an unrelated angular mobility.
+The factor $1/M_i$ in the orientation noise is essential. It converts transverse fluctuations of the moment into angular fluctuations while leaving $\Gamma_{\perp}$ as the transverse mobility of $\mathbf m_i$.
 
-## 4. Discrete amplitude step: Heun for Eq. (D11)
+## 8. Heun discretization of the amplitude
 
-Define
+Define the longitudinal drift evaluated from the complete texture:
 
-$$
-f_{M,i}(\mathbf M,\hat{\mathbf e})
-=\Gamma_\parallel\hat{\mathbf e}_i\cdot\mathbf b_i[\{M_j\hat{\mathbf e}_j\}],
-\qquad
-\sigma_\parallel=\sqrt{2k_BT\Gamma_\parallel}.
-$$
+```math
+f_{M,i}(\mathbf m)
+=\Gamma_{\parallel}
+\hat{\mathbf e}_i\cdot\mathbf b_i[\{\mathbf m_j\}].
+```
 
-With one stored Wiener increment, the stochastic Heun step is
+Let
 
-$$
-\widetilde M_i=M_{i,n}+h f_{M,i}^{n}
-+\sigma_\parallel\Delta W_{i,\parallel},
-$$
+```math
+\sigma_{\parallel}=\sqrt{2k_BT\Gamma_{\parallel}}.
+```
 
-$$
+Using one stored Wiener increment, the Heun predictor is
+
+```math
+\widetilde M_i=M_{i,n}
++h f_{M,i}(\mathbf m_n)
++\sigma_{\parallel}\Delta W_{i,\parallel}.
+```
+
+After forming the predicted full texture and recomputing its constrained electronic field, the corrector is
+
+```math
 M_{i,n+1}=M_{i,n}
-+\frac{h}{2}\left(f_{M,i}^{n}+f_{M,i}^{p}\right)
-+\sigma_\parallel\Delta W_{i,\parallel}.
-$$
++\frac{h}{2}
+\left[f_{M,i}(\mathbf m_n)+f_{M,i}(\widetilde{\mathbf m})\right]
++\sigma_{\parallel}\Delta W_{i,\parallel}.
+```
 
-Here $f^p$ uses the thermodynamic field recomputed at the predicted full magnetic configuration. The noise is additive in Eq. (D11), so it appears once in the final update; the same realization is used to construct the predictor.
+The same $\Delta W_{i,\parallel}$ is used in both stages. Because the amplitude noise in Eq. (D11) is additive, it enters the final step once rather than being averaged twice.
 
-## 5. Discrete orientation step: SIB for Eq. (D13)
+## 9. Rewriting the orientation equation for SIB
 
-Equation (D13) can be written in the cross-product form required by SIB:
+SIB requires an equation in cross-product form. Define
 
-$$
-d\hat{\mathbf e}_i
-=\hat{\mathbf e}_i\times\mathbf a_i\,dt
-+\hat{\mathbf e}_i\times
-\boldsymbol\sigma_i\circ d\mathbf W_i,
-$$
+```math
+\mathbf a_i(\hat{\mathbf e}_i,M_i,\mathbf b_i)
+=\mathbf b_i
+-\frac{\Gamma_{\perp}}{M_i}
+(\hat{\mathbf e}_i\times\mathbf b_i).
+```
 
-with
+Then
 
-$$
-\mathbf a_i
-=\mathbf b_i-rac{\Gamma_\perp}{M_i}
+```math
+\hat{\mathbf e}_i\times\mathbf a_i
+=\hat{\mathbf e}_i\times\mathbf b_i
+-\frac{\Gamma_{\perp}}{M_i}
+\hat{\mathbf e}_i\times
 (\hat{\mathbf e}_i\times\mathbf b_i),
-$$
+```
 
-$$
+which is exactly the deterministic part of Eq. (D13).
+
+For the noise, define its action on a Wiener increment by
+
+```math
 \boldsymbol\sigma_i\Delta\mathbf W_i
-=-\frac{\sqrt{2k_BT\Gamma_\perp}}{M_i}
+=-\frac{\sqrt{2k_BT\Gamma_{\perp}}}{M_i}
 \hat{\mathbf e}_i\times\Delta\mathbf W_i.
-$$
+```
 
-Indeed, $\hat{\mathbf e}\times[-\hat{\mathbf e}\times\Delta\mathbf W]
-=P_\perp\Delta\mathbf W$, reproducing Eq. (D14).
+Because
 
-For the SIB predictor, define
+```math
+\hat{\mathbf e}_i\times
+[-\hat{\mathbf e}_i\times\Delta\mathbf W_i]
+=P_{i,\perp}\Delta\mathbf W_i,
+```
 
-$$
-\mathbf q_i^n=h\mathbf a_i^n
-+\boldsymbol\sigma_i^n\Delta\mathbf W_i,
-$$
+the resulting cross-product noise is exactly the tangential noise of Eq. (D14). Therefore Eq. (D13) becomes
 
-and solve
+```math
+d\hat{\mathbf e}_i
+=\hat{\mathbf e}_i\times\mathbf a_i,dt
++\hat{\mathbf e}_i\times
+\boldsymbol\sigma_i\circ d\mathbf W_i.
+```
 
-$$
+## 10. SIB predictor and corrector
+
+At the old state, form
+
+```math
+\mathbf q_i^n
+=h\mathbf a_i^n
++\boldsymbol\sigma_i^n\Delta\mathbf W_i.
+```
+
+The SIB predictor is the implicit-midpoint rotation
+
+```math
 \widetilde{\mathbf e}_i-\mathbf e_{i,n}
 =\frac{\mathbf e_{i,n}+\widetilde{\mathbf e}_i}{2}
 \times\mathbf q_i^n.
-$$
+```
 
-For the corrector, evaluate the drift and diffusion coefficients at the SIB predicted midpoint, reuse the same $\Delta\mathbf W_i$, and solve
+Evaluate the drift and noise coefficients at the SIB predicted midpoint, reuse the same $\Delta\mathbf W_i$, and form $\mathbf q_i^p$. The corrector is
 
-$$
+```math
 \mathbf e_{i,n+1}-\mathbf e_{i,n}
 =\frac{\mathbf e_{i,n}+\mathbf e_{i,n+1}}{2}
 \times\mathbf q_i^p.
-$$
+```
 
-Both implicit equations are solved analytically by the Cayley map used in the verification code. Consequently, each SIB stage preserves $|\hat{\mathbf e}_i|$ to floating-point roundoff without an external normalization step.
+Each equation has the generic form
 
-## 6. Coupling to a state-dependent SDW field
+```math
+\mathbf x^+-\mathbf x
+=\frac{\mathbf x+\mathbf x^+}{2}\times\mathbf q.
+```
 
-Appendix D states that the amplitude uses Heun, the orientation uses SIB, and both stages reuse the same noise realization. It does not spell out every electronic-field evaluation required when $\mathbf b_i$ depends nonlocally on the complete predicted texture.
+Dotting it with $\mathbf x+\mathbf x^+$ proves
+$|\mathbf x^+|=|\mathbf x|$. The `cayley` function in the verification code solves this equation analytically, so both the predictor and corrector preserve orientation length without post-step normalization.
 
-A literal implementation of both named methods requires distinguishing two evaluation configurations:
+## 11. Coupling the integrator to the electronic solver
 
-- the Heun amplitude corrector needs the field at the predicted endpoint configuration;
-- the SIB orientation corrector needs its coefficients at the SIB predicted midpoint configuration.
+For a state-dependent constrained field, a strict timestep has the following logical sequence:
 
-These configurations coincide for the constant-field manufactured test but not for a general constrained SDW field. Reusing a single endpoint field for both correctors is an additional approximation, not the exact SIB staging of Mentink et al. If this shortcut is used for cost reasons, it must be identified and tested by timestep refinement. A strict implementation may require separate constrained electronic solves for the Heun predictor endpoint and SIB midpoint.
+1. Solve the constrained electronic problem at $\mathbf m_n$ and obtain $\mathbf b_n$ using Eq. (D7).
+2. Draw one longitudinal and one transverse Wiener increment per site.
+3. Construct the Heun amplitude predictor and SIB orientation predictor.
+4. Construct the full predictor texture needed by the Heun amplitude corrector and recompute its thermodynamic field.
+5. Construct the predicted midpoint required by SIB and recompute the thermodynamic field used by the SIB corrector.
+6. Complete both correctors with the same Wiener increments drawn in step 2.
+7. Recombine $\mathbf m_{i,n+1}=M_{i,n+1}\hat{\mathbf e}_{i,n+1}$.
 
-At every such solve:
+At every constrained electronic solve, the spin constraints must converge, $\mu$ must be readjusted to maintain filling, and the converged internal field must be converted to $\mathbf b_i$ with Eq. (D7).
 
-1. enforce the spin constraints of Eq. (D6);
-2. readjust $\mu$ in Eq. (D5) to maintain filling;
-3. convert the converged $\bar{\mathbf h}_i$ to $\mathbf b_i$ with Eq. (D7);
-4. keep the same Wiener increments throughout the full predictor-corrector step.
+The manuscript specifies Heun, SIB, and noise reuse, but it does not explicitly enumerate these distinct electronic-field evaluation configurations. For a constant field they coincide. For the general SDW field they need not coincide. Reusing only one endpoint-predictor field for both correctors is therefore an additional approximation and should be stated and tested by timestep refinement.
 
-## 7. What each verification folder establishes
+## 12. What the verification folders test
 
-| Folder | Manuscript connection | Claim tested |
-|---|---|---|
-| [`check_SIB/`](check_SIB/) | Eq. (D13) and the SIB prescription in Appendix D.3 | unit-length preservation, deterministic order two, stochastic strong order one-half, stochastic weak order one, and fixed-length conservation tests |
-| [`check_Heun+SIB/`](check_Heun+SIB/) | composition of Eqs. (D11) and (D13) | limiting orders of the reconstructed vector $\mathbf m=M\mathbf e$ and separation of longitudinal and transverse updates |
+- [`check_SIB/`](check_SIB/) isolates Eq. (D13) and the SIB algorithm. It tests unit-length preservation, deterministic order two, stochastic strong order one-half, stochastic weak order one, phase error, and fixed-length conservation properties.
+- [`check_Heun+SIB/`](check_Heun+SIB/) combines a Heun soft amplitude with a SIB orientation. It verifies the limiting convergence orders of the reconstructed vector $\mathbf m=M\mathbf e$.
 
-The combined manufactured test does not validate Eqs. (D2)-(D7), because it does not run the constrained electronic solver. That part must be checked in the production SDW code through residual tests, filling conservation, and coupled timestep refinement.
+The manufactured combined test does not run the constrained electronic calculation, so it does not verify Eqs. (D2)-(D7). The production SDW code still needs residual checks, filling checks, and a coupled-noise timestep-refinement study.
 
-## References used by the manuscript
+## References used in Appendix D
 
-- J. L. García-Palacios and F. J. Lázaro, “Langevin-dynamics study of the dynamical properties of small magnetic particles,” *Physical Review B* **58**, 14937 (1998). This is Ref. [125] for the Stratonovich stochastic Landau-Lifshitz formulation.
-- J. H. Mentink, M. V. Tretyakov, A. Fasolino, M. I. Katsnelson, and Th. Rasing, “Stable and fast semi-implicit integration of the stochastic Landau-Lifshitz equation,” *Journal of Physics: Condensed Matter* **22**, 176001 (2010), [doi:10.1088/0953-8984/22/17/176001](https://doi.org/10.1088/0953-8984/22/17/176001). This is Ref. [126] and the source of SIB.
+- J. L. Garcia-Palacios and F. J. Lazaro, “Langevin-dynamics study of the dynamical properties of small magnetic particles,” *Physical Review B* **58**, 14937 (1998). This is manuscript Ref. [125] for the Stratonovich stochastic Landau-Lifshitz formulation.
+- J. H. Mentink, M. V. Tretyakov, A. Fasolino, M. I. Katsnelson, and Th. Rasing, “Stable and fast semi-implicit integration of the stochastic Landau-Lifshitz equation,” *Journal of Physics: Condensed Matter* **22**, 176001 (2010), [doi:10.1088/0953-8984/22/17/176001](https://doi.org/10.1088/0953-8984/22/17/176001). This is manuscript Ref. [126] and the source of SIB.
 
