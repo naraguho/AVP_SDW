@@ -2,6 +2,8 @@
 
 This folder verifies the numerical composition used for a soft vector $\mathbf m=M\mathbf e$. It answers a question that the standalone SIB test cannot: when a fluctuating scalar amplitude is recombined with an independently integrated orientation, does the complete vector inherit the expected stochastic accuracy?
 
+In the manuscript, this corresponds to composing the amplitude equation Eq. (62)/Eq. (D11), integrated by Heun, with the orientation equation Eq. (63)/Eq. (D13), integrated by SIB as specified in Appendix D.3. See the [equation-level manuscript crosswalk](../MANUSCRIPT_CROSSWALK.md).
+
 ## Manufactured model
 
 The test uses two exactly characterized channels:
