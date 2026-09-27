@@ -15,14 +15,13 @@ We therefore integrate these two degrees of freedom differently:
 \qquad |\hat{\mathbf e}_i|=1.
 ```
 
-The amplitude $M_i$ uses stochastic Heun. The orientation $\hat{\mathbf e}_i$ uses Semi-Implicit Scheme B (SIB).
+The amplitude `M_i` uses stochastic Heun. The unit orientation `e_i` uses Semi-Implicit Scheme B (SIB).
 
 For a complete derivation from the Hubbard model through the final discrete updates, see [`MANUSCRIPT_CROSSWALK.md`](MANUSCRIPT_CROSSWALK.md).
 
 ## 1. What information comes from the electrons?
 
-At a given time, the slow magnetic configuration is the complete set
-$\{\mathbf m_i\}$. A constrained finite-temperature Hartree-Fock calculation forces the electronic spin expectation to reproduce this configuration:
+At a given time, the slow magnetic configuration is the complete set of local moments. A constrained finite-temperature Hartree-Fock calculation forces the electronic spin expectation to reproduce this configuration:
 
 ```math
 \langle\hat{\mathbf s}_i\rangle=\mathbf m_i.
@@ -34,7 +33,7 @@ After convergence, the calculation returns the thermodynamic field
 \mathbf b_i=-\frac{\partial F}{\partial\mathbf m_i}.
 ```
 
-This is the field that drives the magnetic dynamics. It must not be confused with the internal one-particle field $\mathbf h_i$ used while solving the constrained Hartree-Fock equations. Appendix D relates them by
+This is the field that drives the magnetic dynamics. It must not be confused with the internal one-particle field `h_i` used while solving the constrained Hartree-Fock equations. Appendix D relates them by
 
 ```math
 \mathbf b_i=\bar{\mathbf h}_i+2U\mathbf m_i.
@@ -65,12 +64,12 @@ The manuscript's vector equation is
 
 The terms have distinct roles:
 
-| Term | Physical role | Changes $M_i$? | Changes $\hat{\mathbf e}_i$? |
+| Term | Physical role | Changes amplitude? | Changes direction? |
 |---|---|:---:|:---:|
-| $\mathbf m_i\times\mathbf b_i$ | reversible precession | no | yes |
-| $\Gamma_{\parallel}\mathbf b_{i,\parallel}$ | longitudinal relaxation | yes | no |
-| $\Gamma_{\perp}\mathbf b_{i,\perp}$ | transverse damping | no | yes |
-| $\boldsymbol\eta_i$ | thermal fluctuations | both channels | both channels |
+| precession, `m_i × b_i` | reversible rotation | no | yes |
+| parallel relaxation | longitudinal relaxation | yes | no |
+| perpendicular damping | transverse damping | no | yes |
+| thermal noise | fluctuations | both channels | both channels |
 
 Projecting this equation gives the two equations that are actually integrated.
 
@@ -79,8 +78,8 @@ Projecting this equation gives the two equations that are actually integrated.
 ```math
 dM_i
 =\Gamma_{\parallel}
-(\hat{\mathbf e}_i\cdot\mathbf b_i),dt
-+\sqrt{2k_BT\Gamma_{\parallel}},dW_{i,\parallel}.
+(\hat{\mathbf e}_i\cdot\mathbf b_i)\,dt
++\sqrt{2k_BT\Gamma_{\parallel}}\,dW_{i,\parallel}.
 ```
 
 This is a scalar relaxational equation with additive noise.
@@ -102,18 +101,18 @@ P_{i,\perp}\circ d\mathbf W_i.
 Here
 
 ```math
-P_{i,\perp}=I-hat{\mathbf e}_i\hat{\mathbf e}_i^{\mathsf T}.
+P_{i,\perp}=I-\hat{\mathbf e}_i\hat{\mathbf e}_i^{\mathsf T}.
 ```
 
 Every orientation increment is tangent to the unit sphere. The circle on the stochastic differential denotes the Stratonovich interpretation.
 
 ## 3. Why not use one integrator for everything?
 
-An ordinary explicit update treats the three Cartesian components of $\mathbf m_i$ uniformly. That is convenient, but it does not respect the different geometry of amplitude and orientation.
+An ordinary explicit update treats the three Cartesian components of `m_i` uniformly. That is convenient, but it does not respect the different geometry of amplitude and orientation.
 
-Stochastic Heun is appropriate for $M_i$ because $M_i$ is supposed to change. Applying a fixed-length spin method to $M_i$ would remove the longitudinal physics.
+Stochastic Heun is appropriate for the amplitude because the amplitude is supposed to change. Applying a fixed-length spin method to it would remove the longitudinal physics.
 
-SIB is appropriate for $\hat{\mathbf e}_i$ because both its predictor and corrector are implicit-midpoint rotations. Each stage preserves $|\hat{\mathbf e}_i|$ algebraically; no after-step normalization is needed.
+SIB is appropriate for the direction because both its predictor and corrector are implicit-midpoint rotations. Each stage preserves unit length algebraically; no after-step normalization is needed.
 
 ## 4. One timestep at a glance
 
@@ -135,11 +134,11 @@ flowchart TD
 
 In words:
 
-1. Decompose every old moment into $M_{i,n}$ and $\hat{\mathbf e}_{i,n}$.
-2. Solve the constrained electronic problem and obtain $\mathbf b_i$.
+1. Decompose every old moment into its amplitude and direction.
+2. Solve the constrained electronic problem and obtain the thermodynamic field `b_i`.
 3. Draw one scalar and one three-component Wiener increment per site.
-4. Construct the Heun predictor for $M_i$.
-5. Construct the first SIB rotation for $\hat{\mathbf e}_i$.
+4. Construct the Heun amplitude predictor.
+5. Construct the first SIB orientation rotation.
 6. Recompute the electronic fields needed by the Heun endpoint and SIB midpoint evaluations.
 7. Finish both correctors using the **same** noise drawn in step 3.
 8. Recombine the updated soft moment.
@@ -174,7 +173,7 @@ For the orientation, rewrite its drift and noise in the SIB cross-product form
 
 ```math
 d\hat{\mathbf e}_i
-=\hat{\mathbf e}_i\times\mathbf a_i,dt
+=\hat{\mathbf e}_i\times\mathbf a_i\,dt
 +\hat{\mathbf e}_i\times\boldsymbol\sigma_i\circ d\mathbf W_i.
 ```
 
@@ -185,11 +184,11 @@ The predictor and corrector both solve an equation of the form
 =\frac{\mathbf x+\mathbf x^+}{2}\times\mathbf q.
 ```
 
-The `cayley` routine solves this three-dimensional implicit equation analytically. Dotting the equation with $\mathbf x+\mathbf x^+$ immediately gives $|\mathbf x^+|=|\mathbf x|$.
+The `cayley` routine solves this three-dimensional implicit equation analytically. Taking its dot product with the midpoint proves that the old and new vectors have exactly the same length (up to floating-point roundoff).
 
 ## 6. A subtle point: which predicted field is needed?
 
-The manuscript specifies Heun for the amplitude and SIB for the orientation, but it does not enumerate every electronic solve when $\mathbf b_i$ depends on the complete nonuniform texture.
+The manuscript specifies Heun for the amplitude and SIB for the orientation, but it does not enumerate every electronic solve when the field depends on the complete nonuniform texture.
 
 - Heun evaluates its corrected drift at a predicted endpoint.
 - SIB evaluates its corrected rotational coefficients at a predicted midpoint.
@@ -201,7 +200,7 @@ These configurations coincide in a constant-field test but not generally in the 
 The methodology is tested in two progressively broader problems:
 
 - [`check_SIB/`](check_SIB/) verifies the geometric orientation integrator by itself.
-- [`check_Heun+SIB/`](check_Heun+SIB/) verifies the reconstructed soft vector $\mathbf m=M\hat{\mathbf e}$.
+- [`check_Heun+SIB/`](check_Heun+SIB/) verifies the reconstructed soft vector `m = M e`.
 
 The observed full-vector orders are:
 
@@ -215,17 +214,17 @@ These results are consistent with the expected limiting orders. They validate th
 
 ## 8. Numerical safeguards that must be explicit
 
-- **Small amplitude:** the orientation is undefined at $M_i=0$, and its equation contains $1/M_i$. Record how often a small-$M$ branch is used.
-- **Amplitude sign:** if a scalar step crosses zero, define whether the direction flips and the stored amplitude becomes $|M_i|$.
-- **Upper bound:** the electronic spin satisfies $M_i\leq1/2$. Hard clipping changes an SDE; count clipping events and show they disappear under refinement.
-- **Field convergence:** constrained-solver tolerances must be smaller than the change caused by halving $h$.
-- **Filling:** readjust $\mu$ during every diagonalization, including predictor and midpoint solves.
+- **Small amplitude:** the orientation is undefined at zero amplitude, and its equation contains the inverse amplitude. Record how often a small-amplitude branch is used.
+- **Amplitude sign:** if a scalar step crosses zero, define whether the direction flips and the stored amplitude becomes nonnegative.
+- **Upper bound:** the electronic spin amplitude cannot exceed one half. Hard clipping changes an SDE; count clipping events and show they disappear under refinement.
+- **Field convergence:** constrained-solver tolerances must be smaller than the change caused by halving the timestep.
+- **Filling:** readjust the chemical potential during every diagonalization, including predictor and midpoint solves.
 
 ## 9. What remains to validate in the production SDW code?
 
-Run the complete SDW simulation with $h$, $h/2$, and $h/4$ using coupled Brownian paths. Compare
+Run the complete SDW simulation with timesteps `h`, `h/2`, and `h/4` using coupled Brownian paths. Compare
 
-- the full moment texture $\mathbf m$;
+- the full moment texture;
 - energy and filling;
 - magnetic amplitudes and ordering observables;
 - constrained-field residuals;
@@ -236,4 +235,3 @@ The production timestep is acceptable when these discretization differences are 
 ## Reference
 
 J. H. Mentink, M. V. Tretyakov, A. Fasolino, M. I. Katsnelson, and Th. Rasing, “Stable and fast semi-implicit integration of the stochastic Landau-Lifshitz equation,” *Journal of Physics: Condensed Matter* **22**, 176001 (2010), [doi:10.1088/0953-8984/22/17/176001](https://doi.org/10.1088/0953-8984/22/17/176001).
-
