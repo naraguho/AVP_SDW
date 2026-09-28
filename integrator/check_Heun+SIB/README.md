@@ -4,11 +4,149 @@ This folder verifies the numerical composition used for a soft vector `m = M e`.
 
 In the manuscript, this corresponds to composing the amplitude equation Eq. (62)/Eq. (D11), integrated by Heun, with the orientation equation Eq. (63)/Eq. (D13), integrated by SIB as specified in Appendix D.3.
 
+## 1. Reference algorithm: three field evaluations per timestep
+
+The reference implementation treats amplitude and orientation as two components of one coupled state. Their predictors advance over the same interval, but their correctors require fields at different configurations. For a state-dependent electronic field, one timestep therefore contains **three constrained field evaluations**.
+
+Start from
+
+```math
+\mathbf m_n=M_n\mathbf e_n,
+\qquad |\mathbf e_n|=1.
+```
+
+### 1. Old-state field
+
+Solve the constrained electronic problem at the old texture:
+
+```math
+\mathbf b_n=\mathbf b[M_n\mathbf e_n].
+```
+
+The chemical potential is readjusted during this and every subsequent electronic solve so that the requested filling is maintained.
+
+### 2. Draw noise once
+
+Draw independent longitudinal and transverse Wiener increments:
+
+```math
+\Delta W_\parallel\sim N(0,h),
+\qquad
+\Delta\mathbf W_\perp\sim N(\mathbf0,hI).
+```
+
+The same increments are reused in the predictor and corrector stages. Redrawing noise in a corrector would define a different stochastic method.
+
+### 3. Joint predictor
+
+Define the longitudinal drift
+
+```math
+f_M(M,\mathbf e,\mathbf b)
+=\Gamma_\parallel\mathbf e\cdot\mathbf b.
+```
+
+The Heun amplitude predictor is
+
+```math
+\widetilde M
+=M_n+h f_M(M_n,\mathbf e_n,\mathbf b_n)
++\sqrt{2k_BT\Gamma_\parallel}\,\Delta W_\parallel.
+```
+
+For the orientation, form
+
+```math
+\mathbf a_n
+=\mathbf b_n
+-\frac{\Gamma_\perp}{M_n}
+(\mathbf e_n\times\mathbf b_n),
+```
+
+include the transverse stochastic rotation in `q_n`, and solve the first SIB equation
+
+```math
+\widetilde{\mathbf e}-\mathbf e_n
+=\frac{\mathbf e_n+\widetilde{\mathbf e}}{2}
+\times\mathbf q_n
+```
+
+with the Cayley formula. Consequently,
+
+```math
+|\widetilde{\mathbf e}|=1
+```
+
+without normalization. The pair `(M_tilde,e_tilde)` is a joint predictor for time `t_(n+1)`.
+
+### 4. Heun corrector at the predicted endpoint
+
+Construct the predicted endpoint texture and perform the second field solve:
+
+```math
+\widetilde{\mathbf m}=\widetilde M\widetilde{\mathbf e},
+\qquad
+\mathbf b_H=\mathbf b[\widetilde{\mathbf m}].
+```
+
+Then
+
+```math
+M_{n+1}=M_n
++\frac h2\left[
+\Gamma_\parallel\mathbf e_n\cdot\mathbf b_n
++\Gamma_\parallel\widetilde{\mathbf e}\cdot\mathbf b_H
+\right]
++\sqrt{2k_BT\Gamma_\parallel}\,\Delta W_\parallel.
+```
+
+This is ordinary Heun applied to a drift that depends on the complete coupled state, not only on the scalar amplitude.
+
+### 5. SIB corrector at the predicted midpoint
+
+Construct predictor-based midpoint variables:
+
+```math
+M_S=\frac{M_n+\widetilde M}{2},
+\qquad
+\mathbf e_S=\frac{\mathbf e_n+\widetilde{\mathbf e}}{2},
+\qquad
+\mathbf m_S=M_S\mathbf e_S.
+```
+
+The midpoint direction is an evaluation point and is not normalized. Perform the third field solve:
+
+```math
+\mathbf b_S=\mathbf b[\mathbf m_S].
+```
+
+Evaluate the SIB drift and noise coefficients at `(M_S,e_S,b_S)` and solve
+
+```math
+\mathbf e_{n+1}-\mathbf e_n
+=\frac{\mathbf e_n+\mathbf e_{n+1}}{2}
+\times\mathbf q_S.
+```
+
+The Cayley solution gives unit final orientation algebraically. Finally recombine once:
+
+```math
+\mathbf m_{n+1}=M_{n+1}\mathbf e_{n+1}.
+```
+
+Thus the required fields are
+
+```math
+\boxed{\mathbf b_n,\quad\mathbf b_H,\quad\mathbf b_S}.
+```
+
+Using `b_H` in the SIB corrector is a cheaper approximation, not the literal midpoint evaluation required by SIB.
+
 ![Combined Heun-SIB convergence tests](results/heun_sib_verification.png)
 
 The plotted quantity is the complete physical vector `m = M e`. The figure makes clear that the transverse SIB sector limits the finite-temperature strong order of the combined method. The plotting source is [`plot_results.jl`](plot_results.jl).
 
-## 1. Stochastic Heun in one dimension
+## 2. Stochastic Heun in one dimension
 
 Begin with a scalar Stratonovich stochastic differential equation:
 
@@ -40,7 +178,7 @@ M_{n+1}=M_n
 
 The same random increment appears in both stages. This predictor-corrector is the stochastic analogue of the explicit trapezoidal rule and is consistent with the Stratonovich interpretation.
 
-## 2. Why the SDW amplitude is simpler
+## 3. Why the SDW amplitude is simpler
 
 The longitudinal SDW equation has additive noise:
 
@@ -74,7 +212,7 @@ f_{M,i}(\mathbf m_n)+f_{M,i}(\widetilde{\mathbf m})
 
 The field in the second drift evaluation belongs to the predicted full texture, not merely to a predicted scalar amplitude in isolation.
 
-## 3. Combining Heun with SIB
+## 4. Combining Heun with SIB
 
 One timestep advances two different geometries:
 
@@ -90,7 +228,51 @@ The full soft vector must not be normalized after recombination: doing so would 
 
 At finite temperature the two methods do not have the same strong convergence order. For this problem, additive-noise Heun gives approximately strong order one, while the SIB orientation with noncommuting multiplicative noise gives strong order one half. The error of the reconstructed vector is therefore expected to be limited by the SIB sector.
 
-## 4. Manufactured model
+## 5. Physical benchmark: soft-spin J1-J2-a model
+
+The primary physics demonstration is [`j1j2a_strict_physics.jl`](j1j2a_strict_physics.jl). It uses the strict three-field algorithm on
+
+```math
+F=J_1\sum_{\langle ij\rangle}\mathbf m_i\cdot\mathbf m_j
++J_2\sum_{\langle\!\langle ij\rangle\!\rangle}\mathbf m_i\cdot\mathbf m_j
++\frac a4\sum_i(|\mathbf m_i|^2-b)^2.
+```
+
+Unlike a fixed-length model, this system tests both pieces of the integrator: SIB rotates each unit direction while Heun changes the local amplitude.
+
+For a uniform-amplitude Néel state,
+
+```math
+M_N^2=b+\frac{4(J_1-J_2)}a,
+\qquad
+\frac{F_N}{N}=(-2J_1+2J_2)M_N^2
++\frac a4(M_N^2-b)^2.
+```
+
+For a stripe state,
+
+```math
+M_S^2=b+\frac{4J_2}a,
+\qquad
+\frac{F_S}{N}=-2J_2M_S^2
++\frac a4(M_S^2-b)^2.
+```
+
+The two analytic branches cross at `J2/J1=1/2`. This supplies a physically interpretable benchmark rather than only a numerical convergence slope.
+
+![Soft-spin J1-J2-a phase and amplitude benchmark](results/j1j2a_strict_physics.png)
+
+The numerical relaxation reproduces three linked pieces of physics:
+
+- the Néel-to-stripe crossing at `J2/J1=1/2`;
+- the analytic relaxed amplitudes on both sides of the transition;
+- the change from `Q(pi,pi)` order to stripe `Q(pi,0)` or `Q(0,pi)` order.
+
+Runs started near the unfavorable pattern relax toward the lower-energy branch away from the frustrated transition. Throughout every recorded relaxation, the free energy decreased monotonically; the largest sampled energy increment was negative (`-2.7e-10` per sampling interval).
+
+This is the main physics-facing validation. The manufactured tests below remain useful because they isolate formal deterministic, strong, and weak convergence orders, but they are not presented as substitutes for a physical model.
+
+## 6. Manufactured model
 
 The test uses two exactly characterized channels:
 
@@ -105,7 +287,7 @@ d\mathbf e=\mathbf e\times(-\mathbf B)dt-
 
 with `m = M e`. The amplitude is an additive-noise Ornstein-Uhlenbeck process advanced by stochastic Heun. The direction is constant-field precession plus isotropic Stratonovich rotational diffusion advanced by SIB/Cayley. The channels are independent, permitting exact amplitude moments and factorized exact weak moments of the full vector.
 
-## 5. Implementation
+## 7. Implementation
 
 `amplitude_heun` performs an Euler predictor followed by a trapezoidal drift correction. The same scalar Brownian increment appears in both stages.
 
@@ -137,7 +319,7 @@ The extended finite-temperature comparison is generated by [`compare_strict_vs_s
 
 Thus the stochastic comparison should be read primarily through error size and statistical resolution, not as evidence that the strict method has a higher formal stochastic order.
 
-## 6. Demonstrations
+## 8. Technical convergence demonstrations
 
 ### Strict-method-only summary
 
@@ -163,7 +345,7 @@ The exact OU mean and variance are compared with the discrete Heun moments. The 
 
 A 100000-step trajectory checks both unit orientation length and the identity `|M e| = |M|`. This catches accidental normalization of the soft vector or drift of the direction norm.
 
-## 7. Reproduction
+## 9. Reproduction
 
 ```bash
 julia heun_sib_combined_verification.jl --quick
@@ -173,9 +355,10 @@ julia coupled_heun_sib_two_fields.jl
 julia compare_strict_vs_shared.jl
 julia compare_strict_vs_shared_full.jl
 julia plot_strict_verification.jl
+julia j1j2a_strict_physics.jl
 ```
 
-## 8. Full-run results
+## 10. Full-run results
 
 | Quantity | Observed order | Expected order |
 |---|---:|---:|
@@ -194,6 +377,6 @@ The maximum direction-norm error was 2.64 × 10⁻¹⁴, and the maximum error i
 
 These deviations are small finite-range/statistical effects. The full vector shows the limiting orders predicted by the two component methods: deterministic order two, strong order one-half, and weak order one.
 
-## 9. What this test does not establish
+## 11. What this test does not establish
 
 The manufactured field is constant and the amplitude/direction channels are independent. Therefore this test validates the split numerical composition but does not test the state-dependent electronic field, chemical-potential solve, coupling between longitudinal and transverse coefficients, behavior near zero amplitude, or the equilibrium distribution of the production SDW model. Those claims require the actual-code refinement protocol described in the [parent integrator methodology](../).
