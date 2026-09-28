@@ -140,11 +140,11 @@ Thus the required fields are
 \boxed{\mathbf b_n,\quad\mathbf b_H,\quad\mathbf b_S}.
 ```
 
-Using `b_H` in the SIB corrector is a cheaper approximation, not the literal midpoint evaluation required by SIB.
+<!--Using `b_H` in the SIB corrector is a cheaper approximation, not the literal midpoint evaluation required by SIB.
 
 ![Combined Heun-SIB convergence tests](results/heun_sib_verification.png)
 
-The plotted quantity is the complete physical vector `m = M e`. The figure makes clear that the transverse SIB sector limits the finite-temperature strong order of the combined method. The plotting source is [`plot_results.jl`](plot_results.jl).
+The plotted quantity is the complete physical vector `m = M e`. The figure makes clear that the transverse SIB sector limits the finite-temperature strong order of the combined method. The plotting source is [`plot_results.jl`](plot_results.jl).-->
 
 ## 2. Stochastic Heun in one dimension
 
@@ -178,7 +178,7 @@ M_{n+1}=M_n
 
 The same random increment appears in both stages. This predictor-corrector is the stochastic analogue of the explicit trapezoidal rule and is consistent with the Stratonovich interpretation.
 
-## 3. Why the SDW amplitude is simpler
+<!--## 3. Why the SDW amplitude is simpler
 
 The longitudinal SDW equation has additive noise:
 
@@ -211,7 +211,7 @@ f_{M,i}(\mathbf m_n)+f_{M,i}(\widetilde{\mathbf m})
 ```
 
 The field in the second drift evaluation belongs to the predicted full texture, not merely to a predicted scalar amplitude in isolation.
-
+-->
 ## 4. Combining Heun with SIB
 
 One timestep advances two different geometries:
@@ -272,7 +272,7 @@ Runs started near the unfavorable pattern relax toward the lower-energy branch a
 
 This is the main physics-facing validation. The manufactured tests below remain useful because they isolate formal deterministic, strong, and weak convergence orders, but they are not presented as substitutes for a physical model.
 
-## 6. Manufactured model
+<!--## 6. Manufactured model
 
 The test uses two exactly characterized channels:
 
@@ -376,7 +376,7 @@ julia j1j2a_strict_physics.jl
 The maximum direction-norm error was 2.64 × 10⁻¹⁴, and the maximum error in `|M e| = |M|` was 2.66 × 10⁻¹⁴.
 
 These deviations are small finite-range/statistical effects. The full vector shows the limiting orders predicted by the two component methods: deterministic order two, strong order one-half, and weak order one.
-
+-->
 ## 11. What this test does not establish
 
 The manufactured field is constant and the amplitude/direction channels are independent. Therefore this test validates the split numerical composition but does not test the state-dependent electronic field, chemical-potential solve, coupling between longitudinal and transverse coefficients, behavior near zero amplitude, or the equilibrium distribution of the production SDW model. Those claims require the actual-code refinement protocol described in the [parent integrator methodology](../).
