@@ -2,11 +2,11 @@
 
 This folder studies Semi-Implicit Scheme B (SIB) as introduced by Mentink *et al.*, “Stable and fast semi-implicit integration of the stochastic Landau–Lifshitz equation,” *J. Phys.: Condens. Matter* **22**, 176001 (2010), [doi:10.1088/0953-8984/22/17/176001](https://doi.org/10.1088/0953-8984/22/17/176001). Their central numerical problem is how to integrate interacting fixed-length spins without losing the geometry or paying for a fully implicit nonlinear solve. They demonstrated the method on a physical one-dimensional Heisenberg chain.
 
-<!-- We first reproduce the method’s geometric and convergence properties on exactly characterized problems. We then apply the same algorithm to a frustrated square-lattice `J1-J2` model and compare it with \#projected Heun (HeunP).
+We first reproduce the method’s geometric and convergence properties on exactly characterized problems. We then apply the same algorithm to a frustrated square-lattice `J1-J2` model and compare it with projected Heun (HeunP).
 
 ![Standalone SIB convergence and phase-error tests](results/sib_verification.png)
 
-The three log-log panels show the expected deterministic, stochastic strong, and stochastic weak slopes. The final panel checks the analytically predicted Cayley phase-error growth. The plotting source is [`plot_results.jl`](plot_results.jl).-->
+The three log-log panels show the expected deterministic, stochastic strong, and stochastic weak slopes. The final panel checks the analytically predicted Cayley phase-error growth. The plotting source is [`plot_results.jl`](plot_results.jl).
 
 ## 1. What problem does SIB solve?
 
@@ -129,7 +129,7 @@ Continuous dynamics conserve both energy and every spin length. This gives two d
 
 ### Energy-stability protocol
 
-The benchmark uses `L=16`, `J1=1`, `J2/J1=0.30`, total time `20/J1`, and eight random unit-spin initial configurations. For each timestep, it records the signed time-averaged energy error
+The benchmark uses `L=16`, `J1=1`, `J2/J1=0.30`, total time `20/J1`, and eight fully random, spatially inhomogeneous unit-spin initial configurations. Each site is drawn independently and uniformly on the unit sphere. For each timestep, it records the signed time-averaged energy error
 
 ```math
 \epsilon_E(h)
@@ -143,7 +143,7 @@ and the maximum length error over all sites and sampled times. Error bars are st
 
 The result has the same interpretation as the stability comparison in the Mentink study. HeunP develops a large systematic energy error as the timestep grows, reaching approximately `0.314/(N J1)` at `h=0.25/J1`. SIB remains much closer to zero, approximately `-0.041/(N J1)` at the same timestep. Both curves show roundoff-level final spin lengths, but for different reasons: HeunP explicitly projects after every step, whereas SIB preserves length through its midpoint algebra.
 
-This benchmark tests deterministic geometric stability. It is not yet a finite-temperature equilibrium-energy test; thermal noise and damping can be added afterward using coupled Brownian paths and a small-step reference.
+This benchmark tests deterministic geometric stability. Because the equation contains precession but no thermal bath or damping, the random starts are not an equilibration protocol: the exact dynamics should conserve their initial energies. The run time is chosen to expose accumulated integration error, not to claim convergence to thermal equilibrium. The finite-temperature equilibrium protocol for the variable-amplitude model is documented in [`check_Heun+SIB`](../check_Heun+SIB/).
 
 ## 5. Code map
 
@@ -161,7 +161,7 @@ E[X(T)]=e^{-2DT}X(0).
 - `conservation_tests`: checks a long stochastic trajectory and an undamped two-spin exchange problem.
 - `j1j2_heunp_vs_sib.jl`: compares projected Heun and SIB on a frustrated interacting spin lattice through energy drift and spin-length preservation.
 
-<!--## 6. What is demonstrated
+## 6. What is demonstrated
 
 ### Geometry
 
@@ -199,7 +199,7 @@ The smooth observable is the first spin component. The exact-moment benchmark me
 
 ### Conservation does not mean exact trajectories
 
-The two-spin test checks total spin and exchange energy in the undamped deterministic limit. Roundoff-level conservation is a structural result; the separate convergence and phase tests show that a norm-preserving trajectory still has finite timestep error.-->
+The two-spin test checks total spin and exchange energy in the undamped deterministic limit. Roundoff-level conservation is a structural result; the separate convergence and phase tests show that a norm-preserving trajectory still has finite timestep error.
 
 ## 7. Reproduction
 
@@ -212,7 +212,7 @@ julia j1j2_heunp_vs_sib.jl
 
 The full run uses 4000 stochastic paths. It writes CSV files, a text summary, and plots when `Plots.jl` is available.
 
-<!--## 8. Full-run results
+## 8. Full-run results
 
 | Test | Observed | Expected |
 |---|---:|---:|
@@ -224,7 +224,7 @@ The full run uses 4000 stochastic paths. It writes CSV files, a text summary, an
 | max two-spin total-spin error, 100000 steps | 7.69 × 10⁻¹⁴ | roundoff |
 | max two-spin exchange-energy error, 100000 steps | 8.03 × 10⁻¹⁴ | roundoff |
 
-The small slope offsets are normal finite-range/statistical deviations: 0.514 is close to 0.5 and 0.989 is close to 1. The appropriate claim is “consistent with the expected orders,” not “exactly equal to the theoretical orders.” The local strong-order estimates fluctuate, while the scaled strong error approaches a plateau; together these are more informative than a single fitted number. -->
+The small slope offsets are normal finite-range/statistical deviations: 0.514 is close to 0.5 and 0.989 is close to 1. The appropriate claim is “consistent with the expected orders,” not “exactly equal to the theoretical orders.” The local strong-order estimates fluctuate, while the scaled strong error approaches a plateau; together these are more informative than a single fitted number.
 
 ## 9. Scope
 
