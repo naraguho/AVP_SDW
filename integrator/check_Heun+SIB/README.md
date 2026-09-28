@@ -230,7 +230,7 @@ The numerical relaxation reproduces three linked pieces of physics:
 - the analytic relaxed amplitudes on both sides of the transition;
 - the change from `Q(pi,pi)` order to stripe `Q(pi,0)` or `Q(0,pi)` order.
 
-For clarity, the simulation uses only the stable phase on each side of the transition: Néel states for `J2/J1 < 1/2` and stripe states for `J2/J1 > 1/2`. The exactly degenerate point `J2/J1 = 1/2` is marked but not simulated.
+For clarity, the simulation uses only the corresponding ordered state in each regime: Néel initialization for `J2/J1 < 1/2` and stripe initialization for `J2/J1 >= 1/2`. At the degenerate point `J2/J1 = 1/2`, the run starts near the stripe state. Both analytic branches are shown over the full range so that their crossing remains visible.
 
 Run the full benchmark with
 
@@ -239,4 +239,3 @@ julia j1j2a_strict_physics.jl
 ```
 
 or use `--quick` for a short smoke test. The additional scripts in this directory remain available as implementation-level checks, while this README focuses on the physical J1-J2-a demonstration.
-

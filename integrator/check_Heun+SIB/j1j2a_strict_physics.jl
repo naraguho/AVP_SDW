@@ -137,10 +137,9 @@ end
 function main(args=ARGS)
     quick="--quick" in args; ratios=collect(0.1:0.1:0.9)
     rows=Vector{NTuple{9,Float64}}(); histories=Dict()
-    # Use only the phase expected to be stable on each side of J2/J1=1/2.
-    # The transition point itself is omitted because the two states are degenerate.
+    # Use the corresponding ordered state on each side of J2/J1=1/2.
+    # At the degenerate transition point, initialize from the stripe state.
     for r in ratios
-        r == 0.5 && continue
         ph = r < 0.5 ? :neel : :stripe
         pid = ph == :neel ? 1 : 2
         p=P(J2=r,steps=quick ? 800 : 4000,L=quick ? 8 : 12)
@@ -156,15 +155,17 @@ function main(args=ARGS)
     end
     PLOTS_AVAILABLE || return
     n=data[data[:,2].==1,:]; s=data[data[:,2].==2,:]
+    analytic_neel=reduce(vcat,permutedims.([[r, analytic(P(J2=r),:neel)...] for r in ratios]))
+    analytic_stripe=reduce(vcat,permutedims.([[r, analytic(P(J2=r),:stripe)...] for r in ratios]))
     p1=Plots.plot(n[:,1],n[:,5],marker=:circle,label="Neel simulation",xlabel="J2/J1",ylabel="relaxed energy/site",title="Stable-state energy",framestyle=:box)
-    Plots.plot!(p1,n[:,1],n[:,6],linestyle=:dash,label="Neel analytic")
+    Plots.plot!(p1,analytic_neel[:,1],analytic_neel[:,3],linestyle=:dash,label="Neel analytic")
     Plots.plot!(p1,s[:,1],s[:,5],marker=:square,label="stripe simulation")
-    Plots.plot!(p1,s[:,1],s[:,6],linestyle=:dash,label="stripe analytic")
+    Plots.plot!(p1,analytic_stripe[:,1],analytic_stripe[:,3],linestyle=:dash,label="stripe analytic")
     Plots.vline!(p1,[0.5],color=:black,linestyle=:dot,label="transition")
     p2=Plots.plot(n[:,1],n[:,3],marker=:circle,label="Neel simulation",xlabel="J2/J1",ylabel="relaxed mean |m|",title="Spin amplitude",framestyle=:box)
-    Plots.plot!(p2,n[:,1],n[:,4],linestyle=:dash,label="Neel analytic")
+    Plots.plot!(p2,analytic_neel[:,1],analytic_neel[:,2],linestyle=:dash,label="Neel analytic")
     Plots.plot!(p2,s[:,1],s[:,3],marker=:square,label="stripe simulation")
-    Plots.plot!(p2,s[:,1],s[:,4],linestyle=:dash,label="stripe analytic")
+    Plots.plot!(p2,analytic_stripe[:,1],analytic_stripe[:,2],linestyle=:dash,label="stripe analytic")
     p3=Plots.plot(n[:,1],n[:,7],marker=:circle,label="Neel Q(pi,pi)",xlabel="J2/J1",ylabel="order parameter",title="Magnetic order",framestyle=:box)
     Plots.plot!(p3,s[:,1],s[:,8],marker=:square,label="stripe Q")
     Plots.vline!(p3,[0.5],color=:black,linestyle=:dot,label="transition")
