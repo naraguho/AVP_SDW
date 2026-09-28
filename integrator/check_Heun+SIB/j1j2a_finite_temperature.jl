@@ -157,35 +157,49 @@ end
 
 function main(args=ARGS)
     quick="--quick" in args
-    p=quick ? P(L=6,steps=8_000,burn=3_000,sample_every=10) : P()
-    tr,Er=simulate(p,:random,101)
-    to,Eo=simulate(p,:neel,202)
-    keep=tr .>= p.burn*p.dt
-    Erp=Er[keep]; Eop=Eo[keep]
-    mer,ser=batch_stats(Erp); meo,seo=batch_stats(Eop)
-    zE=abs(mer-meo)/sqrt(ser^2+seo^2)
-    E0,Eharm=harmonic_predictions(p)
-    @printf("random start:  <E/N> = %.7f +/- %.2g\n",mer,ser)
-    @printf("ordered start: <E/N> = %.7f +/- %.2g\n",meo,seo)
-    @printf("between-start energy difference: z_E = %.3f\n",zE)
-    @printf("low-T harmonic: E0/N = %.7f, <E/N> = %.7f\n",E0,Eharm)
+    temps=quick ? [0.002,0.005] : [0.001,0.002,0.003,0.004,0.005]
+    rows=Vector{NTuple{4,Float64}}()
+    traces=Dict{Symbol,Tuple{Vector{Float64},Vector{Float64}}}()
+    for (it,T) in enumerate(temps)
+        p=quick ? P(L=6,steps=8_000,burn=3_000,sample_every=10,temperature=T) : P(temperature=T)
+        tr,Er=simulate(p,:random,101+it)
+        to,Eo=simulate(p,:neel,202+it)
+        keep=tr .>= p.burn*p.dt
+        mer,ser=batch_stats(Er[keep]); meo,seo=batch_stats(Eo[keep])
+        push!(rows,(T,1.0,mer,ser)); push!(rows,(T,2.0,meo,seo))
+        T==maximum(temps) && (traces[:random]=(tr,Er); traces[:neel]=(to,Eo))
+        zE=abs(mer-meo)/sqrt(ser^2+seo^2)
+        @printf("T=%.3f random %.7f +/- %.2g, Neel %.7f +/- %.2g, z=%.3f\n",T,mer,ser,meo,seo,zE)
+    end
+
+    data=reduce(vcat,permutedims.(collect.(rows)))
+    random=data[data[:,2].==1,:]; neel=data[data[:,2].==2,:]
+    pmax=quick ? P(L=6,temperature=maximum(temps)) : P(temperature=maximum(temps))
+    E0,_=harmonic_predictions(pmax)
+    coeff=(3pmax.L^2-2)/(2pmax.L^2)
+    average_energy=0.5.*(random[:,3].+neel[:,3])
+    slope=sum(temps.*(average_energy.-E0))/sum(abs2,temps)
+    @printf("harmonic slope (3N-2)/(2N) = %.7f; fitted numerical slope = %.7f\n",coeff,slope)
 
     out=joinpath(@__DIR__,"results"); mkpath(out)
     open(joinpath(out,"j1j2a_finite_temperature_summary.csv"),"w") do io
-        println(io,"start,mean_energy_per_site,energy_batch_se")
-        @printf(io,"random,%.12g,%.12g\n",mer,ser)
-        @printf(io,"ordered,%.12g,%.12g\n",meo,seo)
-        @printf(io,"harmonic,%.12g,NaN\n",Eharm)
+        println(io,"temperature,start_id,mean_energy_per_site,energy_batch_se")
+        writedlm(io,data,',')
+        @printf(io,"# harmonic_slope,%.12g\n",coeff)
+        @printf(io,"# fitted_numerical_slope,%.12g\n",slope)
     end
     PLOTS_AVAILABLE || return
-    burntime=p.burn*p.dt
+    tr,Er=traces[:random]; to,Eo=traces[:neel]
+    burntime=pmax.burn*pmax.dt; _,Eharm=harmonic_predictions(pmax)
     p1=Plots.plot(tr,smooth(Er),label="random start",xlabel="time",ylabel="energy/site",title="Energy equilibration",framestyle=:box)
     Plots.plot!(p1,to,smooth(Eo),label="Neel start"); Plots.vline!(p1,[burntime],linestyle=:dash,color=:black,label="burn-in")
     Plots.hline!(p1,[Eharm],linestyle=:dot,color=:purple,label="low-T harmonic")
-    p2=Plots.histogram(Erp,bins=35,normalize=:pdf,alpha=.45,label="random start",xlabel="energy/site",ylabel="density",title="Post-burn energy distribution",framestyle=:box)
-    Plots.histogram!(p2,Eop,bins=35,normalize=:pdf,alpha=.45,label="Neel start")
-    Plots.vline!(p2,[Eharm],linestyle=:dot,color=:purple,label="low-T harmonic")
-    title=@sprintf("Finite-T strict Heun+SIB equilibrium: T=%.3g, J2/J1=%.2f",p.temperature,p.J2/p.J1)
+    Tline=range(0,maximum(temps),length=100)
+    p2=Plots.plot(Tline,coeff.*Tline,linestyle=:dash,color=:black,label=@sprintf("harmonic slope %.5f",coeff),xlabel="temperature T",ylabel="<E>/N - E0/N",title="Low-temperature energy slope",framestyle=:box)
+    Plots.scatter!(p2,random[:,1],random[:,3].-E0,yerror=random[:,4],marker=:circle,label="random start")
+    Plots.scatter!(p2,neel[:,1],neel[:,3].-E0,yerror=neel[:,4],marker=:square,label="Neel start")
+    Plots.plot!(p2,Tline,slope.*Tline,linestyle=:dot,color=:purple,label=@sprintf("numerical slope %.5f",slope))
+    title=@sprintf("Finite-T strict Heun+SIB energy test: J2/J1=%.2f, L=%d",pmax.J2/pmax.J1,pmax.L)
     fig=Plots.plot(p1,p2,layout=(1,2),size=(1150,430),margin=5Plots.mm,plot_title=title)
     Plots.savefig(fig,joinpath(out,"j1j2a_finite_temperature.png"))
     Plots.savefig(fig,joinpath(out,"j1j2a_finite_temperature.svg"))

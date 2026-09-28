@@ -301,23 +301,22 @@ Here `k_B=1`. This test uses `J2/J1=0.30<1/2`, where the low-temperature referen
 
 ### Equilibration protocol
 
-The test uses `L=8`, `J2/J1=0.30`, `T=0.005`, `dt=0.002`, and two statistically independent trajectories:
+The test uses `L=8`, `J2/J1=0.30`, `dt=0.002`, and five temperatures,
+
+```math
+T=0.001,\ 0.002,\ 0.003,\ 0.004,\ 0.005.
+```
+
+At every temperature it runs two statistically independent trajectories:
 
 1. a completely random spin-direction configuration;
 2. a noisy Néel configuration.
 
-Both begin with `|m_i|=0.20`, evolve for `60000` steps, and discard the first `20000` steps. No homogeneity constraint is imposed. After burn-in, the energy per site is sampled from the full inhomogeneous configurations. Agreement between independent initial ensembles, stationarity after burn-in, and comparison with the harmonic prediction are the equilibrium diagnostics.
+Both begin with `|m_i|=0.20`, evolve for `60000` steps, and discard the first `20000` steps. No homogeneity constraint is imposed. After burn-in, the energy per site is sampled from the full inhomogeneous configurations. Agreement between independent initial ensembles, stationarity after burn-in, and the temperature dependence of the mean energy are the equilibrium diagnostics. The left panel shows the equilibration history at the largest sampled temperature; the right panel contains all five temperatures.
 
 ![Finite-temperature energy equilibration](results/j1j2a_finite_temperature.png)
 
-The full run gives
-
-| Initial ensemble | mean energy/site |
-|---|---:|
-| random | `-0.1113534 ± 0.00010` |
-| Néel | `-0.1113975 ± 0.000056` |
-
-The between-start discrepancy is `0.372` combined standard errors. The overlapping post-burn distributions show that the two very different initial ensembles sample the same stationary energy distribution within statistical uncertainty.
+At every temperature, the random-start and Néel-start energies agree within approximately `1.3` combined standard errors or better. This shows loss of memory of the initial ensemble before testing the analytic temperature dependence.
 
 ### Low-temperature analytic comparison
 
@@ -342,13 +341,25 @@ Classical equipartition assigns `k_B T/2` to each of these modes, predicting
 =\frac{E_0}{N}+\frac{3N-2}{2N}k_BT+O(T^2).
 ```
 
-The two zero modes still contribute a finite global orientation volume to the partition function, but they do not raise the energy because rotating every spin together costs exactly zero energy. For this `L=8`, `T=0.005` calculation, the comparison is
+The two zero modes still contribute a finite global orientation volume to the partition function, but they do not raise the energy because rotating every spin together costs exactly zero energy. Therefore the decisive comparison is the slope of the thermal excess energy,
 
-| low-`T` harmonic | random start | Néel start |
-|---:|---:|---:|
-| `-0.1115781` | `-0.1113534 ± 0.00010` | `-0.1113975 ± 0.000056` |
+```math
+\Delta e(T)=\frac{\langle E(T)\rangle-E_0}{N}.
+```
 
-The numerical energy is about `2×10^-4` above the harmonic result, only a few percent of the total thermal energy increase above `E0/N=-0.119`. This is the expected scale of omitted anharmonic and `O(T^2)` corrections. Timestep refinement and lower temperatures should be used to separate discretization error from those physical corrections.
+For `L=8`, the analytic harmonic coefficient is
+
+```math
+c_{\rm harm}=\frac{3N-2}{2N}=1.484375.
+```
+
+A least-squares fit through the known `T=0` intercept to the average of the random-start and Néel-start results gives
+
+```math
+c_{\rm numerical}=1.513854.
+```
+
+The fitted slope is about `1.99%` above the harmonic value. The numerical points remain nearly linear over `T=0.001` through `0.005`; the small upward difference has the expected sign and scale for anharmonic and `O(T^2)` corrections. Repeating the slope fit at smaller `dt` and over progressively lower temperature windows can distinguish timestep bias from those physical corrections.
 
 This is an equilibration and fluctuation-dissipation demonstration, not by itself a mathematical proof of exact Boltzmann sampling. A stricter production study should additionally repeat the calculation at smaller `dt`, larger `L`, longer burn-in, and several independent seeds.
 
@@ -364,6 +375,6 @@ or append `--quick` for a smoke test.
 
 - The fixed-length `J1-J2` stability benchmark in `check_SIB` starts from eight fully random unit-spin configurations. Its undamped dynamics conserve energy, so it tests numerical energy stability rather than thermal equilibration.
 - The zero-temperature `J1-J2-a` benchmark starts near a conventional Néel state and a noncollinear two-sublattice Néel state. It tests the two analytic energy formulas and their crossing; it does not claim unique stripe order at zero temperature.
-- The finite-temperature `J1-J2-a` benchmark starts from both a fully random configuration and a noisy ordered configuration, evolves through a stated burn-in, and checks that their post-burn energy statistics agree with one another and with the low-temperature harmonic prediction.
+- The finite-temperature `J1-J2-a` benchmark starts from both a fully random configuration and a noisy ordered configuration at five temperatures, evolves through a stated burn-in, and compares the measured linear energy slope with the low-temperature harmonic coefficient.
 
 Therefore, “start randomly and evolve for many steps” is part of the finite-temperature protocol, but iteration count alone is not evidence of equilibrium. Observable stationarity, agreement between distinct initial ensembles, autocorrelation-aware uncertainties, and timestep/size refinement are the relevant checks.
