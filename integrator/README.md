@@ -62,7 +62,7 @@ The manuscript's vector equation is
 +\boldsymbol\eta_i(t).
 ```
 
-The terms have distinct roles:
+<!--The terms have distinct roles:
 
 | Term | Physical role | Changes amplitude? | Changes direction? |
 |---|---|:---:|:---:|
@@ -104,16 +104,16 @@ Here
 P_{i,\perp}=I-\hat{\mathbf e}_i\hat{\mathbf e}_i^{\mathsf T}.
 ```
 
-Every orientation increment is tangent to the unit sphere. The circle on the stochastic differential denotes the Stratonovich interpretation.
+Every orientation increment is tangent to the unit sphere. The circle on the stochastic differential denotes the Stratonovich interpretation.-->
 
-## 3. Why not use one integrator for everything?
+<!--## 3. Why not use one integrator for everything?
 
 An ordinary explicit update treats the three Cartesian components of `m_i` uniformly. That is convenient, but it does not respect the different geometry of amplitude and orientation.
 
 Stochastic Heun is appropriate for the amplitude because the amplitude is supposed to change. Applying a fixed-length spin method to it would remove the longitudinal physics.
 
 SIB is appropriate for the direction because both its predictor and corrector are implicit-midpoint rotations. Each stage preserves unit length algebraically; no after-step normalization is needed.
-
+-->
 ## 4. One timestep at a glance
 
 ```mermaid
@@ -186,7 +186,7 @@ The predictor and corrector both solve an equation of the form
 
 The `cayley` routine solves this three-dimensional implicit equation analytically. Taking its dot product with the midpoint proves that the old and new vectors have exactly the same length (up to floating-point roundoff).
 
-## 6. A subtle point: which predicted field is needed?
+<!--## 6. A subtle point: which predicted field is needed?
 
 The manuscript specifies Heun for the amplitude and SIB for the orientation, but it does not enumerate every electronic solve when the field depends on the complete nonuniform texture.
 
@@ -231,7 +231,7 @@ Run the complete SDW simulation with timesteps `h`, `h/2`, and `h/4` using coupl
 - small-amplitude and clipping-event rates.
 
 The production timestep is acceptable when these discretization differences are below the statistical uncertainty of the physical observables.
-
+-->
 ## Reference
 
 J. H. Mentink, M. V. Tretyakov, A. Fasolino, M. I. Katsnelson, and Th. Rasing, “Stable and fast semi-implicit integration of the stochastic Landau-Lifshitz equation,” *Journal of Physics: Condensed Matter* **22**, 176001 (2010), [doi:10.1088/0953-8984/22/17/176001](https://doi.org/10.1088/0953-8984/22/17/176001).
