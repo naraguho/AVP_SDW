@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 
 # Physics-facing benchmark of the strict three-field Heun+SIB integrator for
-# the square-lattice soft-spin J1-J2-a model.  It checks the Neel/stripe ground-
+# the square-lattice variable-amplitude J1-J2-a model. It checks the Neel/stripe ground-
 # state crossing and the analytically predicted relaxed spin amplitudes.
 
 using Random, LinearAlgebra, Statistics, Printf, DelimitedFiles
@@ -137,7 +137,12 @@ end
 function main(args=ARGS)
     quick="--quick" in args; ratios=collect(0.1:0.1:0.9)
     rows=Vector{NTuple{9,Float64}}(); histories=Dict()
-    for r in ratios, (pid,ph) in enumerate((:neel,:stripe))
+    # Use only the phase expected to be stable on each side of J2/J1=1/2.
+    # The transition point itself is omitted because the two states are degenerate.
+    for r in ratios
+        r == 0.5 && continue
+        ph = r < 0.5 ? :neel : :stripe
+        pid = ph == :neel ? 1 : 2
         p=P(J2=r,steps=quick ? 800 : 4000,L=quick ? 8 : 12)
         M,E,Qn,Qs,hist=run_branch(p,ph); Ma,Ea=analytic(p,ph)
         push!(rows,(r,pid,M,Ma,E,Ea,Qn,Qs,maximum(diff(hist))))
@@ -151,13 +156,19 @@ function main(args=ARGS)
     end
     PLOTS_AVAILABLE || return
     n=data[data[:,2].==1,:]; s=data[data[:,2].==2,:]
-    p1=Plots.plot(n[:,1],n[:,5],marker=:circle,label="started near Neel",xlabel="J2/J1",ylabel="relaxed energy/site",title="Ground-state branches",framestyle=:box)
-    Plots.plot!(p1,n[:,1],n[:,6],linestyle=:dash,label="Neel analytic"); Plots.plot!(p1,s[:,1],s[:,5],marker=:square,label="started near stripe"); Plots.plot!(p1,s[:,1],s[:,6],linestyle=:dash,label="stripe analytic"); Plots.vline!(p1,[0.5],color=:black,linestyle=:dot,label="J2/J1=1/2")
-    p2=Plots.plot(n[:,1],n[:,3],marker=:circle,label="started near Neel",xlabel="J2/J1",ylabel="relaxed mean |m|",title="Soft-spin amplitude",framestyle=:box)
-    Plots.plot!(p2,n[:,1],n[:,4],linestyle=:dash,label="Neel analytic"); Plots.plot!(p2,s[:,1],s[:,3],marker=:square,label="started near stripe"); Plots.plot!(p2,s[:,1],s[:,4],linestyle=:dash,label="stripe analytic")
-    p3=Plots.plot(n[:,1],n[:,7],marker=:circle,label="Q(pi,pi), Neel-start run",xlabel="J2/J1",ylabel="order parameter",title="Magnetic character",framestyle=:box)
-    Plots.plot!(p3,s[:,1],s[:,8],marker=:square,label="max stripe Q, stripe-start run")
-    fig=Plots.plot(p1,p2,p3,layout=(1,3),size=(1500,430),margin=5Plots.mm,plot_title="Strict three-field Heun+SIB: soft-spin J1-J2-a physics benchmark")
+    p1=Plots.plot(n[:,1],n[:,5],marker=:circle,label="Neel simulation",xlabel="J2/J1",ylabel="relaxed energy/site",title="Stable-state energy",framestyle=:box)
+    Plots.plot!(p1,n[:,1],n[:,6],linestyle=:dash,label="Neel analytic")
+    Plots.plot!(p1,s[:,1],s[:,5],marker=:square,label="stripe simulation")
+    Plots.plot!(p1,s[:,1],s[:,6],linestyle=:dash,label="stripe analytic")
+    Plots.vline!(p1,[0.5],color=:black,linestyle=:dot,label="transition")
+    p2=Plots.plot(n[:,1],n[:,3],marker=:circle,label="Neel simulation",xlabel="J2/J1",ylabel="relaxed mean |m|",title="Spin amplitude",framestyle=:box)
+    Plots.plot!(p2,n[:,1],n[:,4],linestyle=:dash,label="Neel analytic")
+    Plots.plot!(p2,s[:,1],s[:,3],marker=:square,label="stripe simulation")
+    Plots.plot!(p2,s[:,1],s[:,4],linestyle=:dash,label="stripe analytic")
+    p3=Plots.plot(n[:,1],n[:,7],marker=:circle,label="Neel Q(pi,pi)",xlabel="J2/J1",ylabel="order parameter",title="Magnetic order",framestyle=:box)
+    Plots.plot!(p3,s[:,1],s[:,8],marker=:square,label="stripe Q")
+    Plots.vline!(p3,[0.5],color=:black,linestyle=:dot,label="transition")
+    fig=Plots.plot(p1,p2,p3,layout=(1,3),size=(1500,430),margin=5Plots.mm,plot_title="Strict three-field Heun+SIB: J1-J2-a physics benchmark")
     Plots.savefig(fig,joinpath(out,"j1j2a_strict_physics.png")); Plots.savefig(fig,joinpath(out,"j1j2a_strict_physics.svg"))
 end
 main()
