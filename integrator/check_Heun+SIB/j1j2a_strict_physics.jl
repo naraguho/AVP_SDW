@@ -137,11 +137,9 @@ end
 function main(args=ARGS)
     quick="--quick" in args; ratios=collect(0.1:0.1:0.9)
     rows=Vector{NTuple{9,Float64}}(); histories=Dict()
-    # Use the corresponding ordered state on each side of J2/J1=1/2.
-    # At the degenerate transition point, initialize from the stripe state.
-    for r in ratios
-        ph = r < 0.5 ? :neel : :stripe
-        pid = ph == :neel ? 1 : 2
+    # Run both initial conditions so the magnetic-order panel can show how each
+    # ordering tendency behaves across the full coupling range.
+    for r in ratios, (pid,ph) in enumerate((:neel,:stripe))
         p=P(J2=r,steps=quick ? 800 : 4000,L=quick ? 8 : 12)
         M,E,Qn,Qs,hist=run_branch(p,ph); Ma,Ea=analytic(p,ph)
         push!(rows,(r,pid,M,Ma,E,Ea,Qn,Qs,maximum(diff(hist))))
@@ -154,7 +152,9 @@ function main(args=ARGS)
         writedlm(io,data,',')
     end
     PLOTS_AVAILABLE || return
-    n=data[data[:,2].==1,:]; s=data[data[:,2].==2,:]
+    n_all=data[data[:,2].==1,:]; s_all=data[data[:,2].==2,:]
+    n=n_all[n_all[:,1].<0.5,:]
+    s=s_all[s_all[:,1].>=0.5,:]
     analytic_neel=reduce(vcat,permutedims.([[r, analytic(P(J2=r),:neel)...] for r in ratios]))
     analytic_stripe=reduce(vcat,permutedims.([[r, analytic(P(J2=r),:stripe)...] for r in ratios]))
     p1=Plots.plot(n[:,1],n[:,5],marker=:circle,label="Neel simulation",xlabel="J2/J1",ylabel="relaxed energy/site",title="Stable-state energy",framestyle=:box)
@@ -166,8 +166,8 @@ function main(args=ARGS)
     Plots.plot!(p2,analytic_neel[:,1],analytic_neel[:,2],linestyle=:dash,label="Neel analytic")
     Plots.plot!(p2,s[:,1],s[:,3],marker=:square,label="stripe simulation")
     Plots.plot!(p2,analytic_stripe[:,1],analytic_stripe[:,2],linestyle=:dash,label="stripe analytic")
-    p3=Plots.plot(n[:,1],n[:,7],marker=:circle,label="Neel Q(pi,pi)",xlabel="J2/J1",ylabel="order parameter",title="Magnetic order",framestyle=:box)
-    Plots.plot!(p3,s[:,1],s[:,8],marker=:square,label="stripe Q")
+    p3=Plots.plot(n_all[:,1],n_all[:,7],marker=:circle,label="Q(pi,pi), Neel-start run",xlabel="J2/J1",ylabel="order parameter",title="Magnetic order",framestyle=:box)
+    Plots.plot!(p3,s_all[:,1],s_all[:,8],marker=:square,label="max stripe Q, stripe-start run")
     Plots.vline!(p3,[0.5],color=:black,linestyle=:dot,label="transition")
     fig=Plots.plot(p1,p2,p3,layout=(1,3),size=(1500,430),margin=5Plots.mm,plot_title="Strict three-field Heun+SIB: J1-J2-a physics benchmark")
     Plots.savefig(fig,joinpath(out,"j1j2a_strict_physics.png")); Plots.savefig(fig,joinpath(out,"j1j2a_strict_physics.svg"))

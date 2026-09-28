@@ -230,7 +230,7 @@ The numerical relaxation reproduces three linked pieces of physics:
 - the analytic relaxed amplitudes on both sides of the transition;
 - the change from `Q(pi,pi)` order to stripe `Q(pi,0)` or `Q(0,pi)` order.
 
-For clarity, the simulation uses only the corresponding ordered state in each regime: Néel initialization for `J2/J1 < 1/2` and stripe initialization for `J2/J1 >= 1/2`. At the degenerate point `J2/J1 = 1/2`, the run starts near the stripe state. Both analytic branches are shown over the full range so that their crossing remains visible.
+For clarity, the energy and spin-amplitude panels show only the corresponding ordered state in each regime: Néel initialization for `J2/J1 < 1/2` and stripe initialization for `J2/J1 >= 1/2`. Both analytic branches are shown over the full range so that their crossing remains visible. The magnetic-order panel separately shows both Néel-start and stripe-start runs over the entire coupling range, including both initializations at `J2/J1 = 1/2`.
 
 Run the full benchmark with
 
