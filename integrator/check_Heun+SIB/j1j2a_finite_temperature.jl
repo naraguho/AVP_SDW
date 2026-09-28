@@ -122,42 +122,28 @@ function initialize(p,kind,seed)
     m
 end
 
-mean_amplitude(m,p)=mean(norm(@view m[:,x,y]) for x in 1:p.L,y in 1:p.L)
-radial_variance(m,p,M0)=mean((norm(@view m[:,x,y])-M0)^2 for x in 1:p.L,y in 1:p.L)
-
 function harmonic_predictions(p)
     M0=sqrt(p.b+4*(p.J1-p.J2)/p.a)
     E0=(-2p.J1+2p.J2)*M0^2+0.25p.a*(M0^2-p.b)^2
     N=p.L^2
-    # Radial Hessian around the uniform-amplitude Neel state.
-    invsum=0.0
-    Vpp=p.a*(3M0^2-p.b)
-    for ny in 0:p.L-1,nx in 0:p.L-1
-        qx=2pi*nx/p.L; qy=2pi*ny/p.L
-        K=Vpp-2p.J1*(cos(qx)+cos(qy))+4p.J2*cos(qx)*cos(qy)
-        invsum+=1/K
-    end
-    radial_var=p.temperature*invsum/N
     # N radial modes plus 2N-2 nonzero orientational modes.
     energy=E0+(3N-2)*p.temperature/(2N)
-    M0,E0,energy,radial_var
+    E0,energy
 end
 
 function simulate(p,kind,seed)
     m=initialize(p,kind,seed); w=W(p.L); rng=MersenneTwister(seed+10_000)
-    M0,_,_,_=harmonic_predictions(p)
     ns=div(p.steps,p.sample_every)+1
-    t=zeros(ns); E=zeros(ns); A=zeros(ns); R=zeros(ns); ksave=1
-    E[1]=energy(m,p)/p.L^2; A[1]=mean_amplitude(m,p); R[1]=radial_variance(m,p,M0)
+    t=zeros(ns); E=zeros(ns); ksave=1
+    E[1]=energy(m,p)/p.L^2
     for k in 1:p.steps
         strict_step!(m,w,p,rng)
         if k%p.sample_every==0
             ksave+=1; t[ksave]=k*p.dt
-            E[ksave]=energy(m,p)/p.L^2; A[ksave]=mean_amplitude(m,p)
-            R[ksave]=radial_variance(m,p,M0)
+            E[ksave]=energy(m,p)/p.L^2
         end
     end
-    t,E,A,R
+    t,E
 end
 
 function batch_stats(x; nbatch=10)
@@ -172,44 +158,35 @@ end
 function main(args=ARGS)
     quick="--quick" in args
     p=quick ? P(L=6,steps=8_000,burn=3_000,sample_every=10) : P()
-    tr,Er,Ar,Rr=simulate(p,:random,101)
-    to,Eo,Ao,Ro=simulate(p,:neel,202)
+    tr,Er=simulate(p,:random,101)
+    to,Eo=simulate(p,:neel,202)
     keep=tr .>= p.burn*p.dt
-    Erp,Arp,Rrp=Er[keep],Ar[keep],Rr[keep]; Eop,Aop,Rop=Eo[keep],Ao[keep],Ro[keep]
+    Erp=Er[keep]; Eop=Eo[keep]
     mer,ser=batch_stats(Erp); meo,seo=batch_stats(Eop)
-    mar,sar=batch_stats(Arp); mao,sao=batch_stats(Aop)
-    mrr,srr=batch_stats(Rrp); mro,sro=batch_stats(Rop)
-    zE=abs(mer-meo)/sqrt(ser^2+seo^2); zA=abs(mar-mao)/sqrt(sar^2+sao^2)
-    M0,E0,Eharm,Rharm=harmonic_predictions(p)
-    @printf("random start:  <E/N> = %.7f +/- %.2g, <|m|> = %.7f +/- %.2g\n",mer,ser,mar,sar)
-    @printf("ordered start: <E/N> = %.7f +/- %.2g, <|m|> = %.7f +/- %.2g\n",meo,seo,mao,sao)
-    @printf("between-start differences: z_E = %.3f, z_|m| = %.3f\n",zE,zA)
-    @printf("low-T harmonic: E0/N = %.7f, <E/N> = %.7f, M0 = %.7f, <(M-M0)^2> = %.7g\n",E0,Eharm,M0,Rharm)
-    @printf("measured radial variance: random %.7g +/- %.2g, ordered %.7g +/- %.2g\n",mrr,srr,mro,sro)
+    zE=abs(mer-meo)/sqrt(ser^2+seo^2)
+    E0,Eharm=harmonic_predictions(p)
+    @printf("random start:  <E/N> = %.7f +/- %.2g\n",mer,ser)
+    @printf("ordered start: <E/N> = %.7f +/- %.2g\n",meo,seo)
+    @printf("between-start energy difference: z_E = %.3f\n",zE)
+    @printf("low-T harmonic: E0/N = %.7f, <E/N> = %.7f\n",E0,Eharm)
 
     out=joinpath(@__DIR__,"results"); mkpath(out)
     open(joinpath(out,"j1j2a_finite_temperature_summary.csv"),"w") do io
-        println(io,"start,mean_energy_per_site,energy_batch_se,mean_amplitude,amplitude_batch_se,radial_variance,radial_variance_batch_se")
-        @printf(io,"random,%.12g,%.12g,%.12g,%.12g,%.12g,%.12g\n",mer,ser,mar,sar,mrr,srr)
-        @printf(io,"ordered,%.12g,%.12g,%.12g,%.12g,%.12g,%.12g\n",meo,seo,mao,sao,mro,sro)
-        @printf(io,"harmonic,%.12g,NaN,%.12g,NaN,%.12g,NaN\n",Eharm,M0,Rharm)
+        println(io,"start,mean_energy_per_site,energy_batch_se")
+        @printf(io,"random,%.12g,%.12g\n",mer,ser)
+        @printf(io,"ordered,%.12g,%.12g\n",meo,seo)
+        @printf(io,"harmonic,%.12g,NaN\n",Eharm)
     end
     PLOTS_AVAILABLE || return
     burntime=p.burn*p.dt
     p1=Plots.plot(tr,smooth(Er),label="random start",xlabel="time",ylabel="energy/site",title="Energy equilibration",framestyle=:box)
     Plots.plot!(p1,to,smooth(Eo),label="Neel start"); Plots.vline!(p1,[burntime],linestyle=:dash,color=:black,label="burn-in")
     Plots.hline!(p1,[Eharm],linestyle=:dot,color=:purple,label="low-T harmonic")
-    p2=Plots.plot(tr,smooth(Ar),label="random start",xlabel="time",ylabel="mean |m|",title="Amplitude equilibration",framestyle=:box)
-    Plots.plot!(p2,to,smooth(Ao),label="Neel start"); Plots.vline!(p2,[burntime],linestyle=:dash,color=:black,label="burn-in")
-    Plots.hline!(p2,[M0],linestyle=:dot,color=:purple,label="T=0 saddle M0")
-    p3=Plots.histogram(Erp,bins=35,normalize=:pdf,alpha=.45,label="random start",xlabel="energy/site",ylabel="density",title="Post-burn energy",framestyle=:box)
-    Plots.histogram!(p3,Eop,bins=35,normalize=:pdf,alpha=.45,label="Neel start")
-    Plots.vline!(p3,[Eharm],linestyle=:dot,color=:purple,label="low-T harmonic")
-    p4=Plots.histogram(Rrp,bins=35,normalize=:pdf,alpha=.45,label="random start",xlabel="mean (|m|-M0)^2",ylabel="density",title="Radial-amplitude fluctuations",framestyle=:box)
-    Plots.histogram!(p4,Rop,bins=35,normalize=:pdf,alpha=.45,label="Neel start")
-    Plots.vline!(p4,[Rharm],linestyle=:dot,color=:purple,label="low-T harmonic")
+    p2=Plots.histogram(Erp,bins=35,normalize=:pdf,alpha=.45,label="random start",xlabel="energy/site",ylabel="density",title="Post-burn energy distribution",framestyle=:box)
+    Plots.histogram!(p2,Eop,bins=35,normalize=:pdf,alpha=.45,label="Neel start")
+    Plots.vline!(p2,[Eharm],linestyle=:dot,color=:purple,label="low-T harmonic")
     title=@sprintf("Finite-T strict Heun+SIB equilibrium: T=%.3g, J2/J1=%.2f",p.temperature,p.J2/p.J1)
-    fig=Plots.plot(p1,p2,p3,p4,layout=(2,2),size=(1150,760),margin=5Plots.mm,plot_title=title)
+    fig=Plots.plot(p1,p2,layout=(1,2),size=(1150,430),margin=5Plots.mm,plot_title=title)
     Plots.savefig(fig,joinpath(out,"j1j2a_finite_temperature.png"))
     Plots.savefig(fig,joinpath(out,"j1j2a_finite_temperature.svg"))
 end

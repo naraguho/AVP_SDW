@@ -282,7 +282,7 @@ or use `--quick` for a short smoke test. The additional scripts in this director
 
 ## 5. Finite-temperature equilibrium demonstration
 
-[`j1j2a_finite_temperature.jl`](j1j2a_finite_temperature.jl) tests whether the same strict three-field method reaches a stationary thermal state in both energy and spin amplitude. The longitudinal and transverse increments obey the fluctuation-dissipation amplitudes
+[`j1j2a_finite_temperature.jl`](j1j2a_finite_temperature.jl) tests whether the same strict three-field method reaches the expected stationary thermal energy. The longitudinal and transverse increments obey the fluctuation-dissipation amplitudes
 
 ```math
 dM_i=\Gamma_\parallel\mathbf e_i\cdot\mathbf b_i\,dt
@@ -306,22 +306,22 @@ The test uses `L=8`, `J2/J1=0.30`, `T=0.005`, `dt=0.002`, and two statistically 
 1. a completely random spin-direction configuration;
 2. a noisy Néel configuration.
 
-Both begin with `|m_i|=0.20`, evolve for `60000` steps, and discard the first `20000` steps. No homogeneity constraint is imposed. After burn-in, energy per site and the lattice-averaged spin amplitude are sampled from the full inhomogeneous configurations. Agreement between independent initial ensembles and stationarity after burn-in are the equilibrium diagnostics.
+Both begin with `|m_i|=0.20`, evolve for `60000` steps, and discard the first `20000` steps. No homogeneity constraint is imposed. After burn-in, the energy per site is sampled from the full inhomogeneous configurations. Agreement between independent initial ensembles, stationarity after burn-in, and comparison with the harmonic prediction are the equilibrium diagnostics.
 
-![Finite-temperature energy and spin-amplitude equilibration](results/j1j2a_finite_temperature.png)
+![Finite-temperature energy equilibration](results/j1j2a_finite_temperature.png)
 
 The full run gives
 
-| Initial ensemble | mean energy/site | mean spin amplitude |
-|---|---:|---:|
-| random | `-0.1113534 ± 0.00010` | `0.3414084 ± 0.00020` |
-| Néel | `-0.1113975 ± 0.000056` | `0.3414197 ± 0.00022` |
+| Initial ensemble | mean energy/site |
+|---|---:|
+| random | `-0.1113534 ± 0.00010` |
+| Néel | `-0.1113975 ± 0.000056` |
 
-The between-start discrepancies are `0.372` combined standard errors for energy and `0.038` for amplitude. The overlapping post-burn distributions show that the two very different initial ensembles sample the same stationary state within statistical uncertainty.
+The between-start discrepancy is `0.372` combined standard errors. The overlapping post-burn distributions show that the two very different initial ensembles sample the same stationary energy distribution within statistical uncertainty.
 
 ### Low-temperature analytic comparison
 
-The full interacting finite-temperature model has no closed-form exact energy or mean-amplitude solution. For `T` small compared with the exchange and radial stiffness, however, a Gaussian expansion around the Néel saddle gives a controlled analytic benchmark. With
+The full interacting finite-temperature model has no closed-form exact energy. For `T` small compared with the exchange and radial stiffness, however, a Gaussian expansion around the Néel saddle gives a controlled analytic benchmark. With
 
 ```math
 M_0^2=b+\frac{4(J_1-J_2)}a,
@@ -329,37 +329,26 @@ M_0^2=b+\frac{4(J_1-J_2)}a,
 \frac{E_0}{N}=(-2J_1+2J_2)M_0^2+\frac a4(M_0^2-b)^2,
 ```
 
-equipartition over `N` radial modes and `2N-2` nonzero orientational modes predicts
+each site has three local real degrees of freedom: one radial amplitude and two angular coordinates. Across `N` sites this gives `3N` harmonic coordinates. The `N` radial modes have nonzero stiffness. Of the `2N` orientational modes, two are uniform rotations of the entire Néel axis. Global spin-rotation symmetry makes these two collective coordinates exact zero modes, so they do not appear as quadratic oscillators and contribute no `k_B T/2` energy. For `J2/J1=0.30`, there are no additional accidental zero modes. The number of nonzero quadratic modes is therefore
+
+```math
+N+(2N-2)=3N-2.
+```
+
+Classical equipartition assigns `k_B T/2` to each of these modes, predicting
 
 ```math
 \frac{\langle E\rangle_{\rm harm}}N
 =\frac{E_0}{N}+\frac{3N-2}{2N}k_BT+O(T^2).
 ```
 
-The radial Hessian eigenvalue is
+The two zero modes still contribute a finite global orientation volume to the partition function, but they do not raise the energy because rotating every spin together costs exactly zero energy. For this `L=8`, `T=0.005` calculation, the comparison is
 
-```math
-K(\mathbf q)=a(3M_0^2-b)
--2J_1(\cos q_x+\cos q_y)
-+4J_2\cos q_x\cos q_y,
-```
+| low-`T` harmonic | random start | Néel start |
+|---:|---:|---:|
+| `-0.1115781` | `-0.1113534 ± 0.00010` | `-0.1113975 ± 0.000056` |
 
-so the leading radial-amplitude variance is
-
-```math
-\left\langle(M_i-M_0)^2\right\rangle_{\rm harm}
-=\frac{k_BT}{N}\sum_{\mathbf q}\frac1{K(\mathbf q)}+O(T^2).
-```
-
-For this `L=8`, `T=0.005` calculation, the harmonic predictions and measurements are
-
-| Quantity | low-`T` harmonic | random start | Néel start |
-|---|---:|---:|---:|
-| energy/site | `-0.1115781` | `-0.1113534 ± 0.00010` | `-0.1113975 ± 0.000056` |
-| mean spin amplitude | `M0=0.3464102` at leading order | `0.3414084 ± 0.00020` | `0.3414197 ± 0.00022` |
-| radial variance | `0.00041382` | `0.00045674 ± 0.0000049` | `0.00046308 ± 0.0000046` |
-
-The energy and radial variance agree at the expected low-temperature scale. The downward shift of the mean amplitude is an `O(T)` anharmonic effect, so `M0` is shown as the zero-temperature saddle rather than claimed as an exact finite-temperature mean. Timestep refinement and lower temperatures should be used to separate discretization error from the omitted `O(T^2)` and anharmonic corrections.
+The numerical energy is about `2×10^-4` above the harmonic result, only a few percent of the total thermal energy increase above `E0/N=-0.119`. This is the expected scale of omitted anharmonic and `O(T^2)` corrections. Timestep refinement and lower temperatures should be used to separate discretization error from those physical corrections.
 
 This is an equilibration and fluctuation-dissipation demonstration, not by itself a mathematical proof of exact Boltzmann sampling. A stricter production study should additionally repeat the calculation at smaller `dt`, larger `L`, longer burn-in, and several independent seeds.
 
@@ -375,6 +364,6 @@ or append `--quick` for a smoke test.
 
 - The fixed-length `J1-J2` stability benchmark in `check_SIB` starts from eight fully random unit-spin configurations. Its undamped dynamics conserve energy, so it tests numerical energy stability rather than thermal equilibration.
 - The zero-temperature `J1-J2-a` benchmark starts near a conventional Néel state and a noncollinear two-sublattice Néel state. It tests the two analytic energy formulas and their crossing; it does not claim unique stripe order at zero temperature.
-- The finite-temperature `J1-J2-a` benchmark starts from both a fully random configuration and a noisy ordered configuration, evolves through a stated burn-in, and checks that their post-burn energy and amplitude statistics agree.
+- The finite-temperature `J1-J2-a` benchmark starts from both a fully random configuration and a noisy ordered configuration, evolves through a stated burn-in, and checks that their post-burn energy statistics agree with one another and with the low-temperature harmonic prediction.
 
 Therefore, “start randomly and evolve for many steps” is part of the finite-temperature protocol, but iteration count alone is not evidence of equilibrium. Observable stationarity, agreement between distinct initial ensembles, autocorrelation-aware uncertainties, and timestep/size refinement are the relevant checks.
