@@ -1,8 +1,8 @@
 #!/usr/bin/env julia
 
 # Physics-facing benchmark of the strict three-field Heun+SIB integrator for
-# the square-lattice variable-amplitude J1-J2-a model. It checks the Neel/stripe ground-
-# state crossing and the analytically predicted relaxed spin amplitudes.
+# the square-lattice variable-amplitude J1-J2-a model. It checks the Neel and
+# two-sublattice-Neel ground-state manifolds and their analytic amplitudes.
 
 using Random, LinearAlgebra, Statistics, Printf, DelimitedFiles
 const PLOTS_AVAILABLE = try; import Plots; true; catch; false; end
@@ -101,8 +101,17 @@ end
 function initialize(p,phase,seed)
     rng=MersenneTwister(seed); m=zeros(3,p.L,p.L)
     for y in 1:p.L,x in 1:p.L
-        sign=phase==:neel ? (-1)^(x+y) : (-1)^x
-        v=[0.18randn(rng),0.18randn(rng),sign+0.18randn(rng)]; v./=norm(v)
+        if phase==:neel
+            v=[0.18randn(rng),0.18randn(rng),(-1)^(x+y)+0.18randn(rng)]
+        else
+            # Each checkerboard sublattice has diagonal-bond Neel order.
+            # Their reference axes are orthogonal, making this a deliberately
+            # noncollinear member of the J2/J1>1/2 ground-state manifold.
+            sign=(-1)^x
+            base=isodd(x+y) ? [sign,0.0,0.0] : [0.0,0.0,sign]
+            v=base.+0.18randn(rng,3)
+        end
+        v./=norm(v)
         m[:,x,y].=0.20.*v
     end
     m
@@ -116,6 +125,15 @@ function order(m,p,qx,qy)
     norm(v)/p.L^2
 end
 
+function two_sublattice_neel_order(m,p)
+    nA=zeros(3); nB=zeros(3)
+    for y in 1:p.L,x in 1:p.L
+        target=isodd(x+y) ? nA : nB
+        @views target .+=(-1)^x.*m[:,x,y]
+    end
+    0.5*(norm(nA)+norm(nB))/(p.L^2/2)
+end
+
 function analytic(p,phase)
     M2=phase==:neel ? p.b+4*(p.J1-p.J2)/p.a : p.b+4p.J2/p.a
     M=sqrt(max(M2,0)); c=phase==:neel ? (-2p.J1+2p.J2) : -2p.J2
@@ -124,31 +142,31 @@ function analytic(p,phase)
 end
 
 function run_branch(p,phase)
-    m=initialize(p,phase,314+Int(round(100p.J2))+(phase==:stripe ? 1000 : 0)); w=W(p.L)
+    m=initialize(p,phase,314+Int(round(100p.J2))+(phase==:twosub ? 1000 : 0)); w=W(p.L)
     Ehist=Float64[energy(m,p)/p.L^2]
     for k in 1:p.steps
         strict_step!(m,w,p)
         k%100==0 && push!(Ehist,energy(m,p)/p.L^2)
     end
     lens=[norm(@view m[:,x,y]) for x in 1:p.L,y in 1:p.L]
-    return mean(lens),energy(m,p)/p.L^2,order(m,p,1,1),max(order(m,p,1,0),order(m,p,0,1)),Ehist
+    return mean(lens),energy(m,p)/p.L^2,order(m,p,1,1),two_sublattice_neel_order(m,p),Ehist
 end
 
 function main(args=ARGS)
     quick="--quick" in args; ratios=collect(0.1:0.1:0.9)
     rows=Vector{NTuple{9,Float64}}(); histories=Dict()
-    # Run both initial conditions so the magnetic-order panel can show how each
-    # ordering tendency behaves across the full coupling range.
-    for r in ratios, (pid,ph) in enumerate((:neel,:stripe))
+    # Run both initial conditions so the order panel can show how each ordering
+    # tendency behaves across the full coupling range.
+    for r in ratios, (pid,ph) in enumerate((:neel,:twosub))
         p=P(J2=r,steps=quick ? 800 : 4000,L=quick ? 8 : 12)
         M,E,Qn,Qs,hist=run_branch(p,ph); Ma,Ea=analytic(p,ph)
         push!(rows,(r,pid,M,Ma,E,Ea,Qn,Qs,maximum(diff(hist))))
         (r==0.3 || r==0.7) && (histories[(r,ph)]=hist)
-        @printf("J2/J1=%.1f %-6s M %.4f/%.4f E %.5f/%.5f Qn %.3f Qs %.3f\n",r,String(ph),M,Ma,E,Ea,Qn,Qs)
+        @printf("J2/J1=%.1f %-7s M %.4f/%.4f E %.5f/%.5f Qn %.3f Q2sub %.3f\n",r,String(ph),M,Ma,E,Ea,Qn,Qs)
     end
     data=reduce(vcat,permutedims.(collect.(rows))); out=joinpath(@__DIR__,"results"); mkpath(out)
     open(joinpath(out,"j1j2a_strict_physics.csv"),"w") do io
-        println(io,"J2_over_J1,phase_id,M_numeric,M_exact,E_numeric,E_exact,Q_neel,Q_stripe,max_energy_increase")
+        println(io,"J2_over_J1,phase_id,M_numeric,M_exact,E_numeric,E_exact,Q_neel,Q_two_sublattice_neel,max_energy_increase")
         writedlm(io,data,',')
     end
     PLOTS_AVAILABLE || return
@@ -156,18 +174,18 @@ function main(args=ARGS)
     n=n_all[n_all[:,1].<0.5,:]
     s=s_all[s_all[:,1].>=0.5,:]
     analytic_neel=reduce(vcat,permutedims.([[r, analytic(P(J2=r),:neel)...] for r in ratios]))
-    analytic_stripe=reduce(vcat,permutedims.([[r, analytic(P(J2=r),:stripe)...] for r in ratios]))
+    analytic_twosub=reduce(vcat,permutedims.([[r, analytic(P(J2=r),:twosub)...] for r in ratios]))
     p1=Plots.plot(n[:,1],n[:,5],marker=:circle,label="Neel simulation",xlabel="J2/J1",ylabel="relaxed energy/site",title="Stable-state energy",framestyle=:box)
     Plots.plot!(p1,analytic_neel[:,1],analytic_neel[:,3],linestyle=:dash,label="Neel analytic")
-    Plots.plot!(p1,s[:,1],s[:,5],marker=:square,label="stripe simulation")
-    Plots.plot!(p1,analytic_stripe[:,1],analytic_stripe[:,3],linestyle=:dash,label="stripe analytic")
+    Plots.plot!(p1,s[:,1],s[:,5],marker=:square,label="two-sublattice simulation")
+    Plots.plot!(p1,analytic_twosub[:,1],analytic_twosub[:,3],linestyle=:dash,label="two-sublattice analytic")
     Plots.vline!(p1,[0.5],color=:black,linestyle=:dot,label="transition")
     p2=Plots.plot(n[:,1],n[:,3],marker=:circle,label="Neel simulation",xlabel="J2/J1",ylabel="relaxed mean |m|",title="Spin amplitude",framestyle=:box)
     Plots.plot!(p2,analytic_neel[:,1],analytic_neel[:,2],linestyle=:dash,label="Neel analytic")
-    Plots.plot!(p2,s[:,1],s[:,3],marker=:square,label="stripe simulation")
-    Plots.plot!(p2,analytic_stripe[:,1],analytic_stripe[:,2],linestyle=:dash,label="stripe analytic")
+    Plots.plot!(p2,s[:,1],s[:,3],marker=:square,label="two-sublattice simulation")
+    Plots.plot!(p2,analytic_twosub[:,1],analytic_twosub[:,2],linestyle=:dash,label="two-sublattice analytic")
     p3=Plots.plot(n_all[:,1],n_all[:,7],marker=:circle,label="Q(pi,pi), Neel-start run",xlabel="J2/J1",ylabel="order parameter",title="Magnetic order",framestyle=:box)
-    Plots.plot!(p3,s_all[:,1],s_all[:,8],marker=:square,label="max stripe Q, stripe-start run")
+    Plots.plot!(p3,s_all[:,1],s_all[:,8],marker=:square,label="two-sublattice Neel order")
     Plots.vline!(p3,[0.5],color=:black,linestyle=:dot,label="transition")
     fig=Plots.plot(p1,p2,p3,layout=(1,3),size=(1500,430),margin=5Plots.mm,plot_title="Strict three-field Heun+SIB: J1-J2-a physics benchmark")
     Plots.savefig(fig,joinpath(out,"j1j2a_strict_physics.png")); Plots.savefig(fig,joinpath(out,"j1j2a_strict_physics.svg"))

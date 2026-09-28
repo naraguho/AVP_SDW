@@ -211,28 +211,28 @@ M_N^2=b+\frac{4(J_1-J_2)}a,
 +\frac a4(M_N^2-b)^2.
 ```
 
-For a stripe state,
+For the two-sublattice Néel manifold,
 
 ```math
-M_S^2=b+\frac{4J_2}a,
+M_2^2=b+\frac{4J_2}a,
 \qquad
-\frac{F_S}{N}=-2J_2M_S^2
-+\frac a4(M_S^2-b)^2.
+\frac{F_2}{N}=-2J_2M_2^2
++\frac a4(M_2^2-b)^2.
 ```
 
-The two analytic branches cross at `J2/J1=1/2`. This supplies a physically interpretable benchmark rather than only a numerical convergence slope.
+For `J2/J1>1/2`, the two checkerboard sublattices are each Néel ordered by the diagonal `J2` bonds, but their two Néel vectors have an arbitrary relative angle at classical zero temperature. A collinear stripe is only one member of this continuous ground-state manifold; it is not uniquely selected at `T=0`. The two analytic energy formulas cross at `J2/J1=1/2`, where the classical degeneracy is further enhanced.
 
 ![J1-J2-a phase and spin-amplitude benchmark](results/j1j2a_strict_physics.png)
 
 The numerical relaxation reproduces three linked pieces of physics:
 
-- the Néel-to-stripe crossing at `J2/J1=1/2`;
+- the crossing between the conventional Néel state and the two-sublattice Néel manifold at `J2/J1=1/2`;
 - the analytic relaxed amplitudes on both sides of the transition;
-- the change from `Q(pi,pi)` order to stripe `Q(pi,0)` or `Q(0,pi)` order.
+- the change from conventional `Q(pi,pi)` order to independently ordered diagonal sublattices.
 
 ### Magnetic order parameters
 
-The plotted quantities are Fourier magnetic order parameters. For `N=L^2` sites,
+The conventional Néel quantity is the Fourier magnetic order parameter at `Q=(pi,pi)`. For `N=L^2` sites,
 
 ```math
 m_{\mathbf Q}
@@ -248,24 +248,29 @@ m_{\mathrm N}=m_{(\pi,\pi)}
 =\frac1N\left|\sum_{x,y}(-1)^{x+y}\mathbf m_{x,y}\right|,
 ```
 
+For the large-`J2` manifold, divide the lattice into checkerboard sublattices `A` and `B`, and define
+
 ```math
-m_{\mathrm S}
-=\max\!\left(m_{(\pi,0)},m_{(0,\pi)}\right)
-=\frac1N\max\!\left(
-\left|\sum_{x,y}(-1)^x\mathbf m_{x,y}\right|,
-\left|\sum_{x,y}(-1)^y\mathbf m_{x,y}\right|
-\right).
+\mathbf n_A=\frac{2}{N}\sum_{(x,y)\in A}(-1)^x\mathbf m_{x,y},
+\qquad
+\mathbf n_B=\frac{2}{N}\sum_{(x,y)\in B}(-1)^x\mathbf m_{x,y},
 ```
 
-Thus the code averages over every lattice site; no spatial homogeneity is assumed. These are vector magnetic order parameters. They are different from the scalar Ising-nematic/stripe-orientation observable. One common plaquette definition is
+```math
+m_{2\mathrm{sub}}=\frac{|\mathbf n_A|+|\mathbf n_B|}{2}.
+```
+
+This detects Néel order separately on the two diagonal-bond sublattices without assuming any relative angle between `n_A` and `n_B`. The zero-temperature simulation deliberately initializes them orthogonally, demonstrating a noncollinear member of the degenerate manifold rather than calling it a stripe state.
+
+All definitions average over the full lattice; no spatial homogeneity is imposed. A collinear stripe diagnostic such as `max(m_(pi,0),m_(0,pi))` becomes appropriate only after the relative angle is selected to be `0` or `pi`. The scalar Ising-nematic/stripe-orientation observable is also distinct. One common plaquette definition is
 
 ```math
 \phi_p=(\mathbf m_1-\mathbf m_3)\cdot(\mathbf m_2-\mathbf m_4),
 ```
 
-for cyclically labelled plaquette corners, followed by a lattice average. Equivalently, one may compare horizontal and vertical nearest-neighbor correlations. Such a nematic observable can remain nonzero even when thermal fluctuations make the vector stripe magnetization vanish; it is not what is plotted here.
+for cyclically labelled plaquette corners, followed by a lattice average. Equivalently, one may compare horizontal and vertical nearest-neighbor correlations. Thermal order-by-disorder can select the collinear subset and produce finite nematic order. In a strictly two-dimensional isotropic Heisenberg model, this does not imply true finite-temperature vector magnetic long-range order in the thermodynamic limit.
 
-For clarity, the energy and spin-amplitude panels show only the corresponding ordered state in each regime: Néel initialization for `J2/J1 < 1/2` and stripe initialization for `J2/J1 >= 1/2`. Both analytic branches are shown over the full range so that their crossing remains visible. The magnetic-order panel separately shows both Néel-start and stripe-start runs over the entire coupling range, including both initializations at `J2/J1 = 1/2`.
+For clarity, the energy and spin-amplitude panels show the conventional Néel initialization for `J2/J1 < 1/2` and the noncollinear two-sublattice initialization for `J2/J1 >= 1/2`. Both analytic formulas are shown over the full range so their crossing remains visible. The order panel shows both preparations over the entire coupling range, including both at `J2/J1 = 1/2`.
 
 Run the full benchmark with
 
@@ -292,6 +297,8 @@ d\mathbf e_i\big|_{\rm noise}
 
 The same Wiener increments are reused in predictor and corrector stages. Heun evaluates the amplitude corrector at the predicted endpoint; SIB evaluates the orientational corrector at the predicted midpoint.
 
+Here `k_B=1`. This test uses `J2/J1=0.30<1/2`, where the low-temperature reference state is the conventional Néel state; it is not a test of finite-temperature stripe selection.
+
 ### Equilibration protocol
 
 The test uses `L=8`, `J2/J1=0.30`, `T=0.005`, `dt=0.002`, and two statistically independent trajectories:
@@ -312,6 +319,48 @@ The full run gives
 
 The between-start discrepancies are `0.372` combined standard errors for energy and `0.038` for amplitude. The overlapping post-burn distributions show that the two very different initial ensembles sample the same stationary state within statistical uncertainty.
 
+### Low-temperature analytic comparison
+
+The full interacting finite-temperature model has no closed-form exact energy or mean-amplitude solution. For `T` small compared with the exchange and radial stiffness, however, a Gaussian expansion around the Néel saddle gives a controlled analytic benchmark. With
+
+```math
+M_0^2=b+\frac{4(J_1-J_2)}a,
+\qquad
+\frac{E_0}{N}=(-2J_1+2J_2)M_0^2+\frac a4(M_0^2-b)^2,
+```
+
+equipartition over `N` radial modes and `2N-2` nonzero orientational modes predicts
+
+```math
+\frac{\langle E\rangle_{\rm harm}}N
+=\frac{E_0}{N}+\frac{3N-2}{2N}k_BT+O(T^2).
+```
+
+The radial Hessian eigenvalue is
+
+```math
+K(\mathbf q)=a(3M_0^2-b)
+-2J_1(\cos q_x+\cos q_y)
++4J_2\cos q_x\cos q_y,
+```
+
+so the leading radial-amplitude variance is
+
+```math
+\left\langle(M_i-M_0)^2\right\rangle_{\rm harm}
+=\frac{k_BT}{N}\sum_{\mathbf q}\frac1{K(\mathbf q)}+O(T^2).
+```
+
+For this `L=8`, `T=0.005` calculation, the harmonic predictions and measurements are
+
+| Quantity | low-`T` harmonic | random start | Néel start |
+|---|---:|---:|---:|
+| energy/site | `-0.1115781` | `-0.1113534 ± 0.00010` | `-0.1113975 ± 0.000056` |
+| mean spin amplitude | `M0=0.3464102` at leading order | `0.3414084 ± 0.00020` | `0.3414197 ± 0.00022` |
+| radial variance | `0.00041382` | `0.00045674 ± 0.0000049` | `0.00046308 ± 0.0000046` |
+
+The energy and radial variance agree at the expected low-temperature scale. The downward shift of the mean amplitude is an `O(T)` anharmonic effect, so `M0` is shown as the zero-temperature saddle rather than claimed as an exact finite-temperature mean. Timestep refinement and lower temperatures should be used to separate discretization error from the omitted `O(T^2)` and anharmonic corrections.
+
 This is an equilibration and fluctuation-dissipation demonstration, not by itself a mathematical proof of exact Boltzmann sampling. A stricter production study should additionally repeat the calculation at smaller `dt`, larger `L`, longer burn-in, and several independent seeds.
 
 Run it with
@@ -325,7 +374,7 @@ or append `--quick` for a smoke test.
 ### Initialization protocols used by the two physical benchmarks
 
 - The fixed-length `J1-J2` stability benchmark in `check_SIB` starts from eight fully random unit-spin configurations. Its undamped dynamics conserve energy, so it tests numerical energy stability rather than thermal equilibration.
-- The zero-temperature `J1-J2-a` branch benchmark above starts near Néel and stripe configurations on purpose, because it tests the analytic ordered branches and their crossing. It is not initialized randomly.
+- The zero-temperature `J1-J2-a` benchmark starts near a conventional Néel state and a noncollinear two-sublattice Néel state. It tests the two analytic energy formulas and their crossing; it does not claim unique stripe order at zero temperature.
 - The finite-temperature `J1-J2-a` benchmark starts from both a fully random configuration and a noisy ordered configuration, evolves through a stated burn-in, and checks that their post-burn energy and amplitude statistics agree.
 
 Therefore, “start randomly and evolve for many steps” is part of the finite-temperature protocol, but iteration count alone is not evidence of equilibrium. Observable stationarity, agreement between distinct initial ensembles, autocorrelation-aware uncertainties, and timestep/size refinement are the relevant checks.
