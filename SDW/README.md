@@ -55,7 +55,7 @@ The physical spin amplitude is bounded by $0\leq M_i<1/2$. Directly evolving $M_
 $$
 M_i=f(x_i)=\frac12\tanh x_i,
 \qquad
-x_i=\operatorname{atanh}(2M_i).
+x_i=\mathrm{atanh}(2M_i).
 $$
 
 This map enforces the upper bound geometrically: every finite $x_i$ gives $M_i<1/2$.
@@ -65,7 +65,7 @@ The transformation is especially simple in the Stratonovich convention because t
 $$
 dM_i=f'(x_i)\circ dx_i,
 \qquad
-f'(x_i)=\frac12\operatorname{sech}^2x_i,
+f'(x_i)=\frac12\mathrm{sech}^2x_i,
 $$
 
 we obtain
