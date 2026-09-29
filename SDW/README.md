@@ -31,8 +31,8 @@ For a prescribed SDW texture, the code iterates the constraining field until the
 The longitudinal and orientational equations implemented here are
 
 $$
-dM_i=\Gamma_\parallel\,\mathbf e_i\!\cdot\!\mathbf b_i\,dt
-+\sqrt{2T_{\mathrm{fluc}}\Gamma_\parallel}\,dW_{i,\parallel},
+dM_i=\Gamma_\parallel\mathbf e_i\cdot\mathbf b_i dt
++\sqrt{2T_{\mathrm{fluc}}\Gamma_\parallel}dW_{i,\parallel},
 $$
 
 and
@@ -40,7 +40,7 @@ and
 $$
 d\mathbf e_i=
 \left[\mathbf e_i\times\mathbf b_i
--\frac{\Gamma_\perp}{M_i}\,
+-\frac{\Gamma_\perp}{M_i}
  \mathbf e_i\times(\mathbf e_i\times\mathbf b_i)\right]dt
 +\frac{\sqrt{2T_{\mathrm{fluc}}\Gamma_\perp}}{M_i}
  (I-\mathbf e_i\mathbf e_i^{\mathsf T})\circ d\mathbf W_i.
@@ -71,7 +71,7 @@ $$
 we obtain
 
 $$
-dx_i=\frac{dM_i}{f'(x_i)}=2\cosh^2x_i\,dM_i.
+dx_i=\frac{dM_i}{f'(x_i)}=2\cosh^2x_i dM_i.
 $$
 
 Substitution of the longitudinal equation therefore gives the exact transformed SDE
@@ -79,7 +79,7 @@ Substitution of the longitudinal equation therefore gives the exact transformed 
 $$
 dx_i=
 2\Gamma_\parallel\cosh^2x_i
-(\mathbf e_i\!\cdot\!\mathbf b_i)dt
+(\mathbf e_i\cdot\mathbf b_i)dt
 +\sqrt{8T_{\mathrm{fluc}}\Gamma_\parallel}
 \cosh^2x_i\circ dW_{i,\parallel}.
 $$
@@ -97,7 +97,7 @@ A(x_i,\mathbf e_i,\mathbf b_i)
 G(x_i)=\sqrt{8T_{\mathrm{fluc}}\Gamma_\parallel}\cosh^2x_i.
 $$
 
-With $\Delta W_{i,\parallel}=\sqrt{h}\,\xi_i$ and one Gaussian draw $\xi_i$, the longitudinal predictor is
+With $\Delta W_{i,\parallel}=\sqrt{h}\xi_i$ and one Gaussian draw $\xi_i$, the longitudinal predictor is
 
 $$
 \widetilde x_i=
@@ -141,7 +141,7 @@ The implementation treats $M=0$ as a reflecting boundary in the transformed coor
 | Fluctuation temperature | $T_{\mathrm{fluc}}/U=0.0005$ |
 | Longitudinal mobility | $\Gamma_\parallel=0.1$ |
 | Transverse mobility | $\Gamma_\perp=0.3$ |
-| Timestep | $\Delta t\,U=0.05$ |
+| Timestep | $\Delta t U=0.05$ |
 | Constrained-field mixing | `stp = 0.5` |
 | Constrained-field tolerance | $10^{-5}$ for each vector component norm |
 | Maximum constrained iterations | 5000 per field evaluation |
