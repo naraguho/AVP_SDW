@@ -7,6 +7,7 @@ This repository documents the numerical time integrator used for a soft spin-den
 
 The material is divided by purpose:
 
+- [`SDW/`](SDW/): the full two-dimensional CUDA SDW implementation, run parameters, Slurm example, and an example trajectory;
 - [`integrator/`](integrator/): the complete integrator methodology;
   - [`integrator/check_SIB/`](integrator/check_SIB/): isolated CPU verification of the transverse SIB method;
   - [`integrator/check_Heun+SIB/`](integrator/check_Heun+SIB/): manufactured-problem verification of the complete longitudinal-Heun/transverse-SIB composition.
