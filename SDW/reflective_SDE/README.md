@@ -316,9 +316,46 @@ the raw trajectories remain too large for this repository.
 ## Interpretation and next checks
 
 The present comparison supports a fluctuation-inclusive finite-size crossover:
-the $L=16$ trajectory is Néel ordered at $T=0.01$ and visually disordered at
-$T=0.03$ when the electronic and stochastic temperatures are matched. It does
-not yet locate a thermodynamic critical temperature. The next quantitative
-analysis should measure the staggered structure factor, correlation length,
-autocorrelation time, and results across independent seeds and several lattice
-sizes. Timestep refinement is also required when reflections become frequent.
+the $L=16$ trajectory has a system-spanning Néel pattern at $T=0.01$ and no
+comparable pattern at $T=0.03$ when the electronic and stochastic temperatures
+are matched.
+
+For a strictly two-dimensional equilibrium model with continuous spin-rotation
+symmetry and sufficiently short-range interactions, the Mermin-Wagner theorem
+forbids spontaneous Néel long-range order at every nonzero temperature in the
+thermodynamic limit. Under those assumptions, these two snapshots should not
+be interpreted as locating a nonzero bulk critical temperature. A more precise
+interpretation is that the spin correlation length at $T=0.01$ is comparable
+to or larger than $L=16$, while at $T=0.03$ it is appreciably shorter than the
+system size. The corresponding finite-size crossover temperature $T^*(L)$ may
+move as $L$ increases and need not approach a positive constant.
+
+A single finite system can display a strong checkerboard pattern and retain it
+for a long time even though the exact equilibrium ensemble has no selected
+spin direction. The global Néel vector can rotate slowly, so averaging its
+Cartesian components over a sufficiently long trajectory can give zero while
+the rotationally invariant staggered structure factor remains large.
+
+The theorem's conclusion can change if the simulated model includes explicit
+spin anisotropy, sufficiently long-range interactions, interlayer coupling, or
+another ingredient that removes its assumptions. None of those exceptions
+should be inferred merely from the finite $16\times16$ pattern shown here.
+
+The next quantitative analysis should therefore measure
+
+$$
+\mathbf m_{\mathrm{N}}=
+\frac{1}{N}\sum_i(-1)^{i_x+i_y}\mathbf m_i
+$$
+
+and the rotationally invariant quantity $\langle|\mathbf m_{\mathrm{N}}|^2\rangle$
+across independent seeds and several lattice sizes. The correlation length,
+$\xi/L$, Binder ratio, susceptibility, autocorrelation time, and heating versus
+cooling histories can distinguish an equilibrated finite-size crossover from
+slow coarsening or metastability. Timestep refinement is also required when
+reflections become frequent.
+
+Reference: N. D. Mermin and H. Wagner, *Absence of Ferromagnetism or
+Antiferromagnetism in One- or Two-Dimensional Isotropic Heisenberg Models*,
+Physical Review Letters 17, 1133 (1966),
+[doi:10.1103/PhysRevLett.17.1133](https://doi.org/10.1103/PhysRevLett.17.1133).
