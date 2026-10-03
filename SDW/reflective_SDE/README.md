@@ -22,35 +22,41 @@ scaling.
 
 ## Representative final configurations
 
-### Matched temperatures $T_{\rm elec}=T_{\rm fluc}=0.01$
+### Matched temperatures: $T_{\mathrm{elec}}=T_{\mathrm{fluc}}=0.01$
 
 ![L=16 reflected-SDE final configuration at T=0.01](results/Neel16_T0.01_components_final.png)
 
-At step 7620 ($t=381$), the displayed configuration has
-$\overline M=0.30782$ and $M_{\max}=0.41019$. The alternating sign of $m_x$
-across neighboring sites is direct visual evidence of finite-size Néel order
-in this trajectory.
+At step 7620 (`t = 381`), the displayed configuration has:
 
-### Matched temperatures $T_{\rm elec}=T_{\rm fluc}=0.03$
+- `mean(M) = 0.30782`
+- `max(M) = 0.41019`
+
+The alternating sign of $m_x$ across neighboring sites is direct visual
+evidence of finite-size Néel order in this trajectory.
+
+### Matched temperatures: $T_{\mathrm{elec}}=T_{\mathrm{fluc}}=0.03$
 
 ![L=16 reflected-SDE final configuration at T=0.03](results/Neel16_T0.03_components_final.png)
 
-At step 10000 ($t=500$), the displayed configuration has
-$\overline M=0.20117$ and $M_{\max}=0.44044$. None of the three Cartesian
-components shows the coherent lattice-wide checkerboard pattern seen at
-$T=0.01$.
+At step 10000 (`t = 500`), the displayed configuration has:
+
+- `mean(M) = 0.20117`
+- `max(M) = 0.44044`
+
+None of the three Cartesian components shows the coherent lattice-wide
+checkerboard pattern seen at $T=0.01$.
 
 The comparison is important because the stochastic bath is not being turned
 off while the electronic temperature is varied. Both calculations use
 
 $$
-T_{\rm elec}=T_{\rm fluc},
+T_{\mathrm{elec}}=T_{\mathrm{fluc}},
 $$
 
 so the electronic occupation and order-parameter noise are evaluated at the
 same nominal temperature.
 
-## Reflected flat-$M$ model
+## Reflected longitudinal-amplitude model
 
 We decompose each local SDW vector as
 
@@ -60,13 +66,15 @@ $$
 \qquad |\mathbf e_i|=1.
 $$
 
-The amplitude is treated as a scalar collective coordinate with a flat-$M$
-measure. Its continuous reflected Langevin model is
+This decomposition separates one longitudinal coordinate $M_i$ from the two
+transverse directions contained in $\mathbf e_i$. We therefore formulate the
+longitudinal stochastic dynamics directly as a one-dimensional diffusion in
+$M_i$. The corresponding continuous reflected Langevin equation is
 
 $$
 dM_i=
 \Gamma_\parallel\lambda_{\parallel,i}\,dt
-+\sqrt{2T_{\rm fluc}\Gamma_\parallel}\,dW_{i,\parallel}
++\sqrt{2T_{\mathrm{fluc}}\Gamma_\parallel}\,dW_{i,\parallel}
 +dK_i^{(0)}-dK_i^{(1/2)},
 $$
 
@@ -78,19 +86,76 @@ $$
 \boldsymbol\lambda_i=2\mathbf m_i-\mathbf B_i.
 $$
 
-$K_i^{(0)}$ and $K_i^{(1/2)}$ are boundary terms that act only at the lower
-and upper walls. Because this is a flat-$M$ model rather than a radial rewrite
-of additive Cartesian noise, no $2T\Gamma_\parallel/M_i$ geometric drift is
-included.
+$K_i^{(0)}$ and $K_i^{(1/2)}$ act only when the trajectory reaches the lower
+and upper walls. They prevent probability from leaving the physical interval
+without changing the interior equation. This is the natural reflecting
+boundary condition for the one-dimensional longitudinal coordinate selected
+by the amplitude-orientation decomposition. It is not obtained by rewriting
+three independent Cartesian noises in spherical coordinates, so no
+$2T\Gamma_\parallel/M_i$ geometric drift is added.
 
-The finite-step reflection map is
+### Gibbs distribution and fluctuation-dissipation
+
+Let the longitudinal thermodynamic force be
 
 $$
-R(y)=U-\left|\operatorname{mod}(y,2U)-U\right|,
+\lambda_{\parallel,i}=-\frac{\partial F}{\partial M_i}.
+$$
+
+For one site, the Fokker-Planck equation can be written as
+
+$$
+\frac{\partial p}{\partial t}=-\frac{\partial J}{\partial M},
+$$
+
+with probability current
+
+$$
+J=\Gamma_\parallel\lambda_\parallel p
+-\Gamma_\parallel T_{\mathrm{fluc}}\frac{\partial p}{\partial M}.
+$$
+
+Reflection imposes zero normal probability current at both physical walls,
+
+$$
+J(0)=J(1/2)=0.
+$$
+
+The restricted Gibbs density
+
+$$
+p_{\mathrm{eq}}(M)=
+\frac{1}{Z}\exp\left[-\frac{F(M)}{T_{\mathrm{fluc}}}\right],
+\qquad 0\le M\le\frac12,
+$$
+
+then gives $J=0$ everywhere. Thus the reflection does not inject probability,
+remove probability, or alter the fluctuation-dissipation coefficient. It
+implements the Gibbs ensemble on the physical interval, provided that
+$\lambda_\parallel$ is the thermodynamic force and the diffusion coefficient
+is $\Gamma_\parallel T_{\mathrm{fluc}}$.
+
+This is preferable to clipping, which places artificial probability mass
+exactly at $M=1/2$, and to rejecting outward Gaussian proposals, which changes
+the noise distribution.
+
+For the small one-wall overshoots expected in a resolved timestep, the
+finite-step reflection is
+
+$$
+R(y)=
+\begin{cases}
+-y, & y<0,\\
+y, & 0\le y\le U,\\
+2U-y, & y>U,
+\end{cases}
 \qquad U=\frac12.
 $$
 
-For example, an unconstrained proposal $M^{\rm raw}=0.51$ is mapped to
+The implementation repeats this mirror construction periodically if a rare
+proposal crosses more than one wall.
+
+For example, an unconstrained proposal $M^{\mathrm{raw}}=0.51$ is mapped to
 
 $$
 R(0.51)=1-0.51=0.49.
@@ -104,28 +169,28 @@ retained and the overshoot is folded back into the physical interval.
 With
 
 $$
-\eta_i=\sqrt{2T_{\rm fluc}\Gamma_\parallel\Delta t}\,\xi_i,
+\eta_i=\sqrt{2T_{\mathrm{fluc}}\Gamma_\parallel\Delta t}\,\xi_i,
 \qquad \xi_i\sim\mathcal N(0,1),
 $$
 
 the amplitude predictor is
 
 $$
-M_i^p=R\!\left[
+M_i^p=R\left(
 M_i^n+\Gamma_\parallel\lambda_{\parallel,i}^n\Delta t+\eta_i
-\right].
+\right).
 $$
 
 The constrained electronic field is recomputed at the physical predictor
 texture $\mathbf m_i^p=M_i^p\mathbf e_i^p$. The corrected amplitude is
 
 $$
-M_i^{n+1}=R\!\left[
+M_i^{n+1}=R\left(
 M_i^n+
 \frac{\Gamma_\parallel\Delta t}{2}
 \left(\lambda_{\parallel,i}^n+\lambda_{\parallel,i}^p\right)
 +\eta_i
-\right].
+\right).
 $$
 
 The same longitudinal Wiener increment $\eta_i$ is reused in the predictor
@@ -141,6 +206,23 @@ $|\mathbf e_i|=1$ without post-step normalization. One dynamical step uses
 separate constrained-field solves for the Heun endpoint, SIB midpoint, and
 accepted state.
 
+This composition is sufficient for the present effective dynamics for three
+reasons. First, the longitudinal and transverse variables are advanced in the
+coordinates in which their equations were defined: reflected Heun acts on
+$M_i$, while SIB acts on the unit direction $\mathbf e_i$. Second, reflection
+changes only an illegal radial overshoot; it does not rotate the spin or alter
+the transverse Wiener increment. Third, reflecting the predictor guarantees
+that the electronic field solver is evaluated at a physical target, while
+reflecting the corrector guarantees that the accepted state is physical. The
+predictor and corrector reuse the same Wiener increments, so reflection does
+not amount to resampling a favorable noise realization.
+
+At finite timestep this remains a numerical approximation to the continuous
+reflected process. Its practical validation is therefore the usual one:
+observables and reflection statistics should remain stable when $\Delta t$ is
+reduced. If large overshoots or frequent multiple reflections appear, the
+timestep is not resolving the boundary dynamics.
+
 The mirror construction is motivated by the symmetrized Euler method of
 M. Bossy, E. Gobet, and D. Talay, *A Symmetrized Euler Scheme for an Efficient
 Approximation of Reflected Diffusions*, Journal of Applied Probability 41,
@@ -154,7 +236,7 @@ requires direct timestep-refinement tests in the coupled SDW calculation.
 The constrained field solves
 
 $$
-\langle\mathbf m_i\rangle_{\mathbf B}=\mathbf m_i^{\rm target}
+\langle\mathbf m_i\rangle_{\mathbf B}=\mathbf m_i^{\mathrm{target}}
 $$
 
 by updating every site with its own mixing coefficient $\alpha_i$. Define the
@@ -170,7 +252,7 @@ When $\mathbf s_i\cdot\mathbf y_i>0$ and their directional alignment is at
 least 0.5, the code forms the inverse-response estimate
 
 $$
-\alpha_i^{\rm sec}=
+\alpha_i^{\mathrm{sec}}=
 \frac{\mathbf s_i\cdot\mathbf s_i}
      {\mathbf s_i\cdot\mathbf y_i}.
 $$
@@ -186,7 +268,7 @@ jump.
 The convergence test remains global for each Cartesian component,
 
 $$
-\|\langle m_a\rangle-m_a^{\rm target}\|_2<10^{-4},
+\|\langle m_a\rangle-m_a^{\mathrm{target}}\|_2<10^{-4},
 \qquad a=x,y,z,
 $$
 
@@ -199,7 +281,7 @@ while the adaptive $\alpha_i$ and failure reports remain site resolved.
 | Lattice | $16\times16$, periodic |
 | Sites | 256 |
 | Filling | half filling (`fil = 0.5`) |
-| Nearest-neighbor hopping | $t_{\rm nn}/U=0.25$ |
+| Nearest-neighbor hopping | $t_{\mathrm{nn}}/U=0.25$ |
 | Longitudinal mobility | $\Gamma_\parallel=0.1$ |
 | Transverse mobility | $\Gamma_\perp=0.3$ |
 | Timestep | $\Delta t=0.05$ |
