@@ -2,6 +2,8 @@
 
 This directory contains the two-dimensional spin-density-wave (SDW) evolution used for the example below. It complements [`../integrator/`](../integrator/): that directory isolates and verifies the numerical methods, whereas this directory couples the longitudinal-Heun/transverse-SIB scheme to the constrained electronic calculation.
 
+The newer direct-amplitude experiment, including reflected stochastic-Heun dynamics, site-resolved adaptive field mixing, and matched-temperature $L=16$ results, is documented in [`reflective_SDE/`](reflective_SDE/).
+
 ## Example trajectory
 
 [Download or play the 10 s MP4](results/neel30_four_panels.mp4).
