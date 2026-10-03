@@ -330,7 +330,7 @@ to or larger than $L=16$, while at $T=0.03$ it is appreciably shorter than the
 system size. The corresponding finite-size crossover temperature $T^*(L)$ may
 move as $L$ increases and need not approach a positive constant.
 
-A single finite system can display a strong checkerboard pattern and retain it
+<!--A single finite system can display a strong checkerboard pattern and retain it
 for a long time even though the exact equilibrium ensemble has no selected
 spin direction. The global Néel vector can rotate slowly, so averaging its
 Cartesian components over a sufficiently long trajectory can give zero while
@@ -353,7 +353,7 @@ across independent seeds and several lattice sizes. The correlation length,
 $\xi/L$, Binder ratio, susceptibility, autocorrelation time, and heating versus
 cooling histories can distinguish an equilibrated finite-size crossover from
 slow coarsening or metastability. Timestep refinement is also required when
-reflections become frequent.
+reflections become frequent. -->
 
 Reference: N. D. Mermin and H. Wagner, *Absence of Ferromagnetism or
 Antiferromagnetism in One- or Two-Dimensional Isotropic Heisenberg Models*,
